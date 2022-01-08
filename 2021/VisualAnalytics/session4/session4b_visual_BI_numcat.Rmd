@@ -1,0 +1,306 @@
+<br> 
+<center><img src="http://i.imgur.com/sSaOozN.png" width="500"></center>
+
+
+## Course: VISUAL ANALYTICS FOR POLICY AND MANAGEMENT
+
+### Prof. José Manuel Magallanes, PhD 
+* Visiting Professor of Computational Policy at Evans School of Public Policy and Governance, and eScience Institute Senior Data Science Fellow, University of Washington.
+* Professor of Government and Political Methodology, Pontificia Universidad Católica del Perú. 
+
+
+_____
+
+
+# Session 4- part B: 
+# Tabular data - Bivariate relationships: Categorical-Numerical
+
+
+Let me use the [data about crime](https://data.seattle.gov/Public-Safety/Crime-Data/4fs7-3vj5) from the Seattle Open Data portal:
+
+```{r collect, eval=FALSE}
+# collecting the data
+link="https://github.com/EvansDataScience/data/raw/master/crime.RData"
+load(file = url(link))
+```
+
+
+The data available are:
+
+```{r names, eval=FALSE}
+# variables in the data:
+names(crime)
+```
+
+
+
+In this material, we are interested in how a categorical variable can help us better understand the behavior of a numeric variable. Given the data we will be using, the curiosity and experience of the analyst is critical in mining the data to reveal some insight, as numerical data have longer value ranges than categorical data.
+
+Let's take a look at a variable that informs the amount of days it takes someone to report a crime:
+
+```{r summaryTime, eval=FALSE}
+# stats of days to report
+# notice the spread of values.
+summary(crime$DaysToReport)
+```
+
+The max is a very high value. Let me see the crimes that took the longest:
+
+```{r reordering, eval=FALSE}
+# 'order' decreasing
+
+library(magrittr) # for %>%
+crime[order(-crime$DaysToReport),c('year','DaysToReport')]%>%head(20)
+```
+
+Do you think this is right? The longest one was from 1908! Let me get rid of that value:
+```{r, eval=FALSE}
+crime=crime[crime$year>1908,]
+```
+
+
+There are several good categorical variables that can be used to study the behavior of the time it takes to report a crime. Let's use _precint_. Here I keep only the ones non-missing:
+
+```{r nonmiss, eval=FALSE}
+# non missing in precinct
+crime=crime[complete.cases(crime$Precinct),]
+```
+
+Let me get the median for each precinct:
+```{r aggregate, eval=FALSE}
+# summary: mean by groups
+aggregate(data=crime, DaysToReport~Precinct,median)
+```
+
+As you see, 50% of the cases are at most reported in one day. Let's request a boxplot for each precinct:
+
+```{r boxNumCat1, eval=FALSE}
+# boxplot of days to report per precinct
+
+library(ggplot2)
+base=ggplot(data=crime,
+            aes(x=Precinct,y=DaysToReport))
+
+base + geom_boxplot()
+```
+
+
+The plot above would not give so much insight, there is so much noise. The fact is that a better summary would tell us more to consider:
+
+```{r tapplySummary, eval=FALSE}
+# using "summary" function
+tapply(crime$DaysToReport,
+       crime$Precinct, summary)
+```
+
+From the information above, you know that for each precint, the 75% of crimes are reported in a day or less. If we consider that situation as the expected behavior, let me omit those cases. Let me explore by week or more using **ggarrange**:
+
+
+```{r weeksandabove, eval=FALSE}
+# several boxplots, from week and above
+
+library(ggpubr)
+
+base7=ggplot(data=crime[crime$DaysToReport>=7,],
+            aes(x=Precinct,y=DaysToReport)) 
+box7=base7 + geom_boxplot() + labs(title = "week and above")
+
+base30=ggplot(data=crime[crime$DaysToReport>=30,],
+            aes(x=Precinct,y=DaysToReport))
+box30=base30 + geom_boxplot() + labs(title = "month and above")
+
+base180=ggplot(data=crime[crime$DaysToReport>=180,],
+            aes(x=Precinct,y=DaysToReport)) 
+box180=base180 + geom_boxplot() + labs(title = "half year and above")
+
+
+base365=ggplot(data=crime[crime$DaysToReport>=365,],
+            aes(x=Precinct,y=DaysToReport)) 
+box365=base365 + geom_boxplot() + labs(title = "year and above")
+
+
+
+#all in one:
+ggarrange(box7,box30,box180,box365)
+
+```
+
+Up to this point, you need to be planing a good _story_. The situation is different for each case, but let's build our visual from the crimes that take a year or longer to report.
+
+
+```{r, eval=FALSE}
+crimeYear=crime[crime$DaysToReport>365,]
+```
+
+Let me see if flipping helps you see better:
+
+```{r, eval=FALSE}
+baseY=ggplot(data=crimeYear,
+            aes(x=Precinct,
+                y=DaysToReport)) 
+boxY=baseY + geom_boxplot() + labs(title = "Crimes that took longer than one year to report")
+# flipping
+boxY  + coord_flip()
+```
+
+It could be better if we **reorder** the category by the median of the numeric variable:
+```{r, eval=FALSE}
+baseY=ggplot(data=crimeYear,
+            aes(x=reorder(Precinct,
+                          DaysToReport,
+                          mean),
+                y=DaysToReport)) 
+boxY=baseY + geom_boxplot() + labs(title = "Crimes that took longer than one year to report")
+# flipping
+boxY  + coord_flip()
+
+
+```
+
+What if we use the histogram:
+
+```{r, eval=FALSE}
+baseHY=ggplot(data=crimeYear,
+            aes(x=DaysToReport)) 
+histY=baseHY + geom_histogram(aes(color=Precinct),
+                              fill=NA) 
+# flipping
+histY  
+```
+
+You might prefer the use of facets:
+```{r, eval=FALSE}
+histY + facet_grid(~Precinct)
+```
+
+Or...
+
+```{r, eval=FALSE}
+histY + facet_grid(Precinct~.)
+```
+
+What about reordering:
+
+```{r, eval=FALSE}
+histY= histY + facet_grid(reorder(Precinct,
+                                  DaysToReport,
+                                  mean)~.)
+histY
+```
+
+Another common visual is the mean-error plot, which shows the mean of the numeric variable including a confidence interval. Let me first recall the two variables I have been using:
+
+```{r, eval=FALSE}
+crimeYear[,c('Precinct', 'DaysToReport')] %>%head(20)
+```
+
+The  plan is to show the mean per precinct:
+
+```{r, eval=FALSE}
+baseME=ggplot(crimeYear, aes(x=Precinct,
+                             y=DaysToReport)) +
+        theme_classic()
+ME1=baseME + geom_point(stat="summary") 
+ME1
+```
+
+We can add now the error bar:
+```{r, eval=FALSE}
+ME2=ME1 + geom_errorbar(stat="summary") 
+ME2
+```
+
+Error bars have a **huge problem**, they give you the illusion of symmetry. So, I recommend you include the data in the plot:
+
+```{r, eval=FALSE}
+baseME= ggplot(crimeYear, aes(x=Precinct,
+                      y=DaysToReport)) +
+        theme_classic()
+baseME= baseME + geom_jitter(colour="blue",
+                             alpha=0.2 #transparency
+                             )
+ME=baseME + geom_point(stat="summary") +
+             geom_errorbar(stat="summary")
+ME + scale_y_continuous(breaks = c(1000,5000, 10000,15000))
+    
+```
+
+The next code is easier with the installation of **ggpubr**: 
+
+```{r plotCI, eval=FALSE}
+# introducing ggpubr
+library(ggpubr)
+
+base = ggline(data=crimeYear,x = "Precinct", 
+       y = "DaysToReport",
+       add = 'mean_ci')
+base + geom_jitter(colour="blue",
+                   alpha=0.2)
+
+```
+
+Let's turn the days into years and replot:
+
+```{r, eval=FALSE}
+crimeYear$Years_to_Report=crimeYear$DaysToReport/365
+base = ggline(data=crimeYear,x = "Precinct", 
+       y = "Years_to_Report",
+       add = 'mean_ci')
+base + geom_jitter(colour="blue",
+                   alpha=0.2)
+```
+
+Using the capabilities to compute statistics on the run, let's invent a visual, this time using the vertical axis in logarithmic scale:
+
+```{r, eval=FALSE}
+baseINV=ggplot(crimeYear, aes(x=Precinct,
+                             y=Years_to_Report)) +
+        theme_classic()
+
+#point for each stat
+MINs=baseINV + geom_point(stat="summary",fun='max') 
+MAXMINs=MINs + geom_point(stat="summary",fun='min',
+                          color='red') 
+MxMnMDs=MAXMINs+ geom_point(stat="summary",
+                            fun='median',
+                            color='blue') 
+# logarithmic scale..custom breaks
+MxMnMDs + scale_y_log10(breaks=c(50,40,30,5,1))
+```
+
+The plot has colors but no legend. Legends activate when color appears as an **aes**. This may look tricky: 
+```{r, eval=FALSE}
+# vector of colors named as stats:
+myFunCols=c(Max='black',Min='blue',Median='purple')
+
+# plotting
+baseINV=ggplot(crimeYear, aes(x=Precinct,
+                             y=Years_to_Report)) +
+        theme_classic()
+# points with AESthetics:
+MINs=baseINV + geom_point(stat="summary",fun='max',
+                          aes(color="Max")) 
+MAXMINs=MINs + geom_point(stat="summary",fun='min',
+                          aes(color="Min")) 
+MxMnMDs=MAXMINs+ geom_point(stat="summary",fun='median',
+                            aes(color="Median")) 
+MxMnMDs= MxMnMDs + scale_y_log10(breaks=c(50,40,30,5,1))
+
+# customizing legend:
+MxMnMDs= MxMnMDs + scale_colour_manual(values=myFunCols,
+                                       name="My Stats") 
+MxMnMDs
+```
+Connecting the dots (using **group** in **aes**):
+
+```{r, eval=FALSE}
+MxMnMDsL=MxMnMDs+ geom_line(stat="summary",fun='max',
+                            aes(group=1,color="Max"))
+MxMnMDsL=MxMnMDsL+ geom_line(stat="summary",fun='min',
+                            aes(group=1,color="Min"))
+MxMnMDsL=MxMnMDsL+ geom_line(stat="summary",fun='median',
+                            aes(group=1,color="Median")) 
+MxMnMDsL
+```
+
+

@@ -1,0 +1,94 @@
+
+* This is how you organize links
+
+```{r}
+location="https://github.com/EvansDataScience/data/raw/master/"
+file="hsb_ok.sav"
+
+# question: what is 'paste0'??
+linkToFile=paste0(location,file)
+```
+
+* fetching the file from the cloud
+
+```{r}
+library(foreign)
+# object hsb has it!
+hsb=read.spss(linkToFile,to.data.frame = T)
+```
+
+```{r}
+str(hsb)
+```
+
+```{r}
+library(ggplot2)
+
+base=ggplot(data=hsb, # data frame
+            aes(x=MATH)) # what to plot
+
+```
+
+```{r}
+#
+plot1= base + geom_histogram()
+# I need this to see the result:
+plot1
+```
+```{r}
+# all text for titles
+Titles=list(Title="Nice title...!",
+            SubTi="sub is here",
+            XTi="Level of MATH",
+            YTi="Amount of students",
+            Sou="Source: imaginary")
+#
+# using the previous texts
+plot2= plot1 + labs(title = Titles$Title,
+                    subtitle = Titles$SubTi,
+                    x=Titles$XTi,
+                    y=Titles$YTi,
+                    caption = Titles$Sou)
+plot2
+```
+
+```{r}
+#texts for annotation
+message="HELLO"
+#
+#annotating
+plot3=plot2 + annotate(geom = 'text',color='white',
+                       x =50,y=20, #position
+                       label=message)
+plot3
+```
+```{r}
+plot4=plot3+ theme_classic()
+plot4
+```
+```{r}
+plot1legend=base + geom_histogram(aes(color=SEX))
+plot1legend
+```
+```{r}
+plot1legFacet1=plot1legend + facet_grid(~SEX)
+plot1legFacet1
+```
+```{r}
+plot1legFacet2=plot1legend + facet_grid(SES~SEX)
+plot1legFacet2
+```
+```{r}
+base=ggplot(data= hsb,
+            aes(x=MATH,y=WRTG)) + theme_light()
+plotDots=base + geom_point(shape=2)
+plotDots
+```
+```{r}
+plotLine=plotDots + geom_smooth (method = lm,
+                                 se=TRUE,
+                                 colour =" red ",
+                                 lty=5)
+plotLine
+```
+

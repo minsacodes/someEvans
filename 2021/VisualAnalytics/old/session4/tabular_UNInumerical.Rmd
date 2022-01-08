@@ -1,0 +1,305 @@
+<br> 
+<center><img src="http://i.imgur.com/sSaOozN.png" width="500"></center>
+
+
+## Course: VISUAL ANALYTICS FOR POLICY AND MANAGEMENT
+
+### Prof. José Manuel Magallanes, PhD 
+* Visiting Professor of Computational Policy at Evans School of Public Policy and Governance, and eScience Institute Senior Data Science Fellow, University of Washington.
+* Professor of Government and Political Methodology, Pontificia Universidad Católica del Perú. 
+
+
+_____
+<a id='TOC'></a>
+
+# Session 4: Tabular data: Univariate Numerical
+
+_____
+
+1. [Counting](#part1)
+
+2. [Measuring](#part2)
+
+    
+**[Exercises](#exs)**: <br>
+
+- Exercise 6
+- Exercise 7
+
+_____
+
+
+
+Let's load the data we used for the last session:
+
+```{r getData, eval=TRUE}
+link='https://github.com/EvansDataScience/VisualAnalytics_2_tabularData/raw/master/data/eduwa.rda'
+
+#getting the data TABLE from the file in the cloud:
+load(file=url(link))
+```
+
+<a id='part1'></a>
+
+## Data from Counting
+
+Counting expresses numerical values. They could be represented with bar plots if their frequency table had few different values, but that is not the case. For example, the variable _Reduced.Lunch_ informs how many kids there are in each school that have that lunch for a reduced price. We have more than 2000 schools, so it is possible to have that many different values. This is how many different values we have:
+
+```{r unique, eval=TRUE}
+# how many unique values
+length(unique(eduwa$Reduced.Lunch))
+```
+
+There are too many different values. Then, the bar plot is not a good idea (and neither a frequency table):
+
+```{r, eval=TRUE}
+# barplot without ggplot
+library(questionr)
+NumDf=freq(eduwa$Reduced.Lunch) 
+
+NumDf=data.frame(variable=as.numeric(row.names(NumDf)),
+                 NumDf,
+                 row.names = NULL)
+```
+
+Using the function **freq** from **questionr** we built a frequency table in less steps:
+
+```{r, eval=TRUE}
+#resultado
+head(NumDf)
+```
+
+This 'bad' frequeny table will give you a bad barplot:
+
+```{r BAD_barplot, eval=TRUE}
+library(ggplot2)
+base = ggplot(data=NumDf,aes(x=variable,y=n))
+base + geom_bar(stat='identity')
+```
+
+
+
+The bar plot produces a bar for each unique value in the data, counting how many times this value appeared. Now, we have many values, so we need to organize the data into _intervals_. However, when you have a numerical variable you should keep in mind:
+
+* What is the representative value? Generally the mean, and median in the presence of outliers. 
+
+* Does the shape of the distribution differs from a normal distribution?  
+    - How well is the representative value? You need some measure of dispersion. For the mean you have the **standard deviation**, and for the median the **median absolute deviation**. You can also compute a measure of kurtosis.
+    - If there is asymmetry, is it big enough to show outliers? The boxplot will help you identify outliers, but you can compute a measure of asymetry.
+
+You can get several info from this command:
+
+```{r summary, eval=TRUE}
+summary(eduwa$Reduced.Lunch)
+```
+
+The **summary** command can be suplemented with:
+```{r, eval=TRUE}
+# standard deviation:
+sd(eduwa$Reduced.Lunch,na.rm = T)
+```
+
+```{r, eval=TRUE}
+# median absolute deviation:
+mad(eduwa$Reduced.Lunch,na.rm = T)
+```
+
+```{r, eval=TRUE}
+# asymmetry
+library(DescTools)
+Skew(eduwa$Reduced.Lunch,na.rm = T,conf.level = 0.95, ci.type = "bca",R=3000)
+
+```
+
+```{r, eval=TRUE}
+# shape
+#library(DescTools)
+Kurt(eduwa$Reduced.Lunch,na.rm = T,conf.level = 0.95, ci.type = "bca",R=3000)
+```
+
+
+With the values computed, can you guess how a histogram or a boxplot would look?
+
+The **histogram** is the basic plot, you can use the basic function:
+
+```{r GGLikeBase,eval=TRUE,fig.height=7}
+#ggplot
+base= ggplot(eduwa,aes(x = Reduced.Lunch))  
+h1= base + geom_histogram(binwidth = 20) 
+h1
+```
+
+
+One of the central measures could be used as a reference:
+```{r, eval=TRUE}
+MEAN=summary(eduwa$Reduced.Lunch)[4]
+h1+ geom_vline(xintercept = MEAN)
+```
+
+The boxplot can also be used:
+
+```{r, eval=TRUE}
+base= ggplot(eduwa,aes(y = Reduced.Lunch))  
+b1= base + geom_boxplot() 
+b1 +coord_flip()
+```
+
+This boxplot shows outliers, which have been computed using the interquartile range:
+```{r, eval=TRUE}
+# difference between q3 and q1:
+theIQR=IQR(eduwa$Reduced.Lunch,na.rm = T)
+```
+
+Then you simply add to the top and bottom quartile the IQR multiply by a factor (typically 1.5) to get the outlier threshold:
+```{r, eval=TRUE}
+(upperT=summary(eduwa$Reduced.Lunch)[[5]] + theIQR*1.5)
+```
+
+Then, we have this many outliers:
+```{r, eval=TRUE}
+sum(eduwa$Reduced.Lunch>upperT,na.rm = T)
+```
+```{r, eval=TRUE}
+someValues=as.vector(summary(eduwa$Reduced.Lunch)[-c(4,6,7)])
+theTicks = round(c(someValues,upperT),0)
+b2 = b1 +coord_flip()
+b3 = b2 + geom_hline(yintercept = upperT, 
+                color='grey8',linetype="dotted", size=2) 
+b3 + scale_y_continuous(breaks = theTicks)
+```
+
+In general, measurements and counts are prone to have outliers. It is not common to speak about outliers in ordinal data since they have few levels. From what I just said, the subjective side of finding outliers lies in the decision of **what is normal**. In the case of the boxplot, the decision has been to accept as normal the values that have a *prudent distance* from the first or last quartile. The distance chosen was 1.5 times the difference between the quartiles (a.k.a. Interquartle Range or **IQR**). Then, if a outlier is found, the whisker ends in a position different than the actual minimum or maximal value of the data.
+
+[Go to table of contents.](#TOC)
+
+<a id='part2'></a>
+
+### Measurement
+
+A simplistic idea of measurement tells you the times a particular unit is present in the unit of analysis; which allows for the presence of decimal places. There are variables that can have negative values.
+
+Let's analyze the variable _Student.Teacher.Ratio_:
+
+```{r summaryMeans, eval=TRUE}
+summary(eduwa$Student.Teacher.Ratio)
+```
+
+The histogram should be:
+
+
+```{r histMeasu,eval=TRUE,fig.height=7}
+#ggplot
+base= ggplot(eduwa,aes(x = Student.Teacher.Ratio))  
+h1= base + geom_histogram(binwidth = 15) #changing width
+
+h1
+```
+
+
+```{r, eval=TRUE}
+d1= base + stat_density(geom = "line")
+d1
+```
+
+
+```{r, eval=TRUE}
+theMean=mean(eduwa$Student.Teacher.Ratio, na.rm = T)
+theMedian=median(eduwa$Student.Teacher.Ratio, na.rm = T)
+
+d1 + geom_vline(xintercept = theMedian,color='blue') +
+     geom_vline(xintercept =theMean,color='red') 
+```
+```{r, eval=TRUE}
+d1 + geom_vline(aes(xintercept = theMedian,color='median')) +
+     geom_vline(aes(xintercept =theMean,color='mean')) +
+     scale_color_manual(name = "Central Measures",
+                        values = c(median = "blue", mean = "red"),
+                        breaks = c('median','mean'),
+                       labels=c("MEDIAN", "HELLOmean"))
+```
+
+
+A box plot is always welcome:
+```{r,eval=TRUE}
+
+base= ggplot(eduwa,aes(y = Student.Teacher.Ratio))  
+b1= base + geom_boxplot()
+
+b1 + coord_flip()
+```
+
+
+The presence of outliers suggests different statistical populations:
+
+* The "normal" schools.
+* The schools below the "normal".
+* The schools above the "normal".
+
+
+```{r, eval=TRUE}
+# variable of interest
+theVAR=eduwa$Student.Teacher.Ratio
+# interquartile range
+theIQR=IQR(theVAR,na.rm = T)
+
+#thresholds
+upperT=summary(theVAR)[[5]] + theIQR*1.5
+lowerT=summary(theVAR)[[2]] - theIQR*1.5
+
+# dataframes of subpopulations
+belows=eduwa[which(theVAR < lowerT),]
+normals=eduwa[which(theVAR >=lowerT & theVAR <= upperT),]
+aboves=eduwa[which(theVAR > upperT),]
+```
+
+```{r histBott,eval=TRUE,fig.height=7}
+#ggplot
+base= ggplot(belows,aes(x = Student.Teacher.Ratio))  
+d1B= base + stat_density(geom = "line") + labs(title = 'belows')
+
+base= ggplot(normals,aes(x = Student.Teacher.Ratio))  
+d1N= base + stat_density(geom = "line") + labs(title = 'normals',
+                                               y=NULL)
+
+base= ggplot(aboves,aes(x = Student.Teacher.Ratio))  
+d1A= base + stat_density(geom = "line") + labs(title = 'aboves',
+                                               y=NULL)
+```
+
+```{r, eval=TRUE}
+library(ggpubr)
+multid1_a = ggarrange(d1B,d1N,d1A,ncol = 3,nrow = 1)
+multid1_a
+```
+```{r, eval=TRUE}
+multid1_b = ggarrange(d1B,d1N,d1A,ncol = 1,nrow = 3)
+
+multid1AN = annotate_figure(multid1_b,
+                            top = text_grob("Visualizing Tooth Growth",
+                                            face = "bold", size = 14),
+                            bottom = text_grob("Data source: EDUWA", 
+                                               hjust = 1, x = 1,
+                                               face = "italic", 
+                                               size = 10),
+                            left = "DENSITY for all",
+                            right = "some text here???")
+
+multid1AN
+```
+
+<a id='exs'></a>
+
+## Exercises
+
+### Exercise 6:
+
+Change  **multid1AN**: In one column and three rows show a boxplot, a histogram and a density plot of the variable **Student.Teacher.Ratio** only for the 'normals'. Also, add, remove and change defaults, so that you keep the plot simple and optimize the data-ink ratio.
+
+
+### Exercise 7:
+
+Using the information from the boxplot of **Reduced.Lunch**, prepare a multiplot with a boxplot and a histogram of the "aboves".Add, remove and change defaults, so that you keep the plot simple and optimize the data-ink ratio.
+
+
+_____
+[Go to table of contents.](#TOC)

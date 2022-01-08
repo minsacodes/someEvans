@@ -1,0 +1,29 @@
+# This is a Notebook
+### Edited by: COMPLETE YOUR NAME HERE
+
+-----
+
+## This is an image: Move it to the top.
+
+![](Evans_Logo.png)
+
+
+This is how you write in italics: *this way* or _this way_.
+This is how you write in bold: **this way** or __this way__.
+
+If you need bullets:
+
+* One bullet
+* another one.
+
+This is where you add a small piece of R code:
+
+```{r}
+1+10
+```
+
+You will write several of those pieces later.
+
+Finally, you can add a citation using **citr** after the word "work":
+
+All this work will be based on previous work.

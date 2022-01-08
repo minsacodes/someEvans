@@ -1,0 +1,168 @@
+Country,Regimetype,Electoralprocessandpluralism,Functioningofgovernment,Politicalparticipation,Politicalculture,Civilliberties,Overallscore
+Norway,Full democracy,10.0,9.64,10.0,10.0,9.41,9.81
+Iceland,Full democracy,10.0,8.57,8.89,10.0,9.41,9.37
+Sweden,Full democracy,9.58,9.29,8.33,10.0,9.12,9.26
+New Zealand,Full democracy,10.0,8.93,8.89,8.75,9.71,9.25
+Canada,Full democracy,9.58,8.93,8.89,9.38,9.41,9.24
+Finland,Full democracy,10.0,8.93,8.89,8.75,9.41,9.2
+Denmark,Full democracy,10.0,8.93,8.33,9.38,9.12,9.15
+Ireland,Full democracy,10.0,7.86,8.33,9.38,9.71,9.05
+Australia,Full democracy,10.0,8.57,7.78,8.75,9.71,8.96
+Netherlands,Full democracy,9.58,9.29,8.33,8.75,8.82,8.96
+Taiwan,Full democracy,10.0,9.64,7.22,8.13,9.71,8.94
+Switzerland,Full democracy,9.58,8.57,7.78,9.38,8.82,8.83
+Luxembourg,Full democracy,10.0,8.57,6.67,8.75,9.71,8.68
+Germany,Full democracy,9.58,8.21,8.33,8.13,9.12,8.67
+Uruguay,Full democracy,10.0,8.57,6.67,8.13,9.71,8.61
+United Kingdom,Full democracy,10.0,7.5,8.89,7.5,8.82,8.54
+Chile,Full democracy,9.58,8.21,6.67,8.13,8.82,8.28
+Austria,Full democracy,9.58,7.5,8.33,6.88,8.53,8.16
+Costa Rica,Full democracy,9.58,6.79,7.22,7.5,9.71,8.16
+Mauritius,Full democracy,9.17,7.86,6.11,8.75,8.82,8.14
+Japan,Full democracy,8.75,8.57,6.67,8.13,8.53,8.13
+Spain,Full democracy,9.58,7.14,7.22,8.13,8.53,8.12
+South Korea,Full democracy,9.17,8.21,7.22,7.5,7.94,8.01
+France,Flawed democracy,9.58,7.5,7.78,6.88,8.24,7.99
+United States,Flawed democracy,9.17,6.79,8.89,6.25,8.53,7.92
+Portugal,Flawed democracy,9.58,7.5,6.11,7.5,8.82,7.9
+Estonia,Flawed democracy,9.58,7.86,6.67,6.88,8.24,7.84
+Israel,Flawed democracy,9.17,7.5,9.44,7.5,5.59,7.84
+Italy,Flawed democracy,9.58,6.43,7.22,7.5,7.94,7.74
+Malta,Flawed democracy,9.17,6.79,6.11,8.13,8.24,7.68
+Czech Republic,Flawed democracy,9.58,6.07,6.67,7.5,8.53,7.67
+Cape Verde,Flawed democracy,9.17,7.0,6.67,6.88,8.53,7.65
+Botswana,Flawed democracy,9.17,6.79,6.11,7.5,8.53,7.62
+Cyprus,Flawed democracy,9.17,5.36,7.22,7.5,8.53,7.56
+Slovenia,Flawed democracy,9.58,6.43,7.22,6.25,8.24,7.54
+Belgium,Flawed democracy,9.58,7.86,5.0,6.88,8.24,7.51
+Greece,Flawed democracy,9.58,5.21,6.11,7.5,8.53,7.39
+Latvia,Flawed democracy,9.58,6.07,6.67,5.63,8.24,7.24
+Malaysia,Flawed democracy,9.58,7.86,6.67,6.25,5.59,7.19
+Panama,Flawed democracy,9.58,6.43,7.22,5.0,7.65,7.18
+Trinidad and Tobago,Flawed democracy,9.58,7.14,6.11,5.63,7.35,7.16
+Jamaica,Flawed democracy,8.75,7.14,5.0,6.25,8.53,7.13
+Lithuania,Flawed democracy,9.58,6.07,5.56,5.63,8.82,7.13
+Timor-Leste,Flawed democracy,9.58,5.93,5.56,6.88,7.35,7.06
+South Africa,Flawed democracy,7.42,7.14,8.33,5.0,7.35,7.05
+Colombia,Flawed democracy,9.17,6.43,6.67,5.0,7.94,7.04
+Slovakia,Flawed democracy,9.58,6.43,5.56,5.63,7.65,6.97
+Argentina,Flawed democracy,9.17,5.36,6.67,5.63,7.94,6.95
+Brazil,Flawed democracy,9.58,5.36,6.11,5.63,7.94,6.92
+Poland,Flawed democracy,9.17,5.71,6.67,5.63,7.06,6.85
+Suriname,Flawed democracy,9.58,6.07,6.11,5.0,7.35,6.82
+Bulgaria,Flawed democracy,9.17,5.71,7.22,4.38,7.06,6.71
+India,Flawed democracy,8.67,7.14,6.67,5.0,5.59,6.61
+Tunisia,Flawed democracy,9.17,5.36,7.22,5.63,5.59,6.59
+Philippines,Flawed democracy,9.17,5.0,7.78,4.38,6.47,6.56
+Hungary,Flawed democracy,8.33,6.43,5.0,6.25,6.76,6.56
+Peru,Flawed democracy,8.75,5.36,5.56,5.63,7.35,6.53
+Namibia,Flawed democracy,7.0,5.36,6.67,5.63,7.94,6.52
+Croatia,Flawed democracy,9.17,6.07,6.11,4.38,6.76,6.5
+Ghana,Flawed democracy,8.33,5.36,6.67,6.25,5.88,6.5
+Mongolia,Flawed democracy,8.75,5.71,5.56,5.63,6.76,6.48
+Romania,Flawed democracy,9.17,5.36,6.67,3.75,7.06,6.4
+Dominican Republic,Flawed democracy,9.17,4.29,6.11,5.0,7.06,6.32
+Lesotho,Flawed democracy,9.17,4.14,6.11,5.63,6.47,6.3
+Indonesia,Flawed democracy,7.92,7.5,6.11,4.38,5.59,6.3
+Serbia,Flawed democracy,8.25,5.36,6.67,3.75,7.06,6.22
+Paraguay,Flawed democracy,8.75,5.71,5.0,4.38,7.06,6.18
+Sri Lanka,Flawed democracy,7.0,5.71,5.56,6.25,6.18,6.14
+Ecuador,Flawed democracy,8.75,5.0,6.67,3.75,6.47,6.13
+Papua New Guinea,Flawed democracy,6.92,6.07,3.33,6.25,7.94,6.1
+Albania,Flawed democracy,7.0,5.36,4.44,6.25,7.35,6.08
+Mexico,Flawed democracy,7.83,5.71,7.78,3.13,5.88,6.07
+Thailand,Flawed democracy,7.0,5.0,6.67,6.25,5.29,6.04
+Singapore,Flawed democracy,4.83,7.86,4.44,6.25,6.76,6.03
+Guyana,Flawed democracy,6.5,5.36,6.11,5.0,7.06,6.01
+Bangladesh,Hybrid regime,7.42,6.07,6.11,5.63,4.71,5.99
+El Salvador,Hybrid regime,9.17,4.29,6.11,3.75,6.18,5.9
+North Macedonia,Hybrid regime,7.42,5.71,6.11,3.13,7.06,5.89
+Ukraine,Hybrid regime,8.25,2.71,7.22,5.0,5.88,5.81
+Moldova,Hybrid regime,7.0,4.64,6.11,4.38,6.76,5.78
+Montenegro,Hybrid regime,7.42,5.71,6.11,3.13,6.47,5.77
+Malawi,Hybrid regime,7.0,4.29,5.0,6.25,6.18,5.74
+Fiji,Hybrid regime,6.58,5.0,6.11,5.63,5.29,5.72
+Bhutan,Hybrid regime,8.75,6.79,3.33,5.0,4.71,5.71
+Madagascar,Hybrid regime,7.92,3.57,6.67,5.63,4.71,5.7
+Senegal,Hybrid regime,6.08,5.71,4.44,6.25,5.88,5.67
+Hong Kong,Hybrid regime,3.17,3.64,5.0,7.5,8.53,5.57
+Honduras,Hybrid regime,7.83,4.29,4.44,4.38,5.88,5.36
+Armenia,Hybrid regime,7.5,5.0,6.11,3.13,5.0,5.35
+Liberia,Hybrid regime,7.42,2.71,5.56,5.63,5.29,5.32
+Georgia,Hybrid regime,7.83,3.57,6.11,3.75,5.29,5.31
+Nepal,Hybrid regime,4.83,5.36,5.0,5.63,5.29,5.22
+Tanzania,Hybrid regime,4.83,5.0,5.0,6.25,4.41,5.1
+Bolivia,Hybrid regime,6.08,3.57,6.11,3.75,5.88,5.08
+Kenya,Hybrid regime,3.5,5.36,6.67,5.63,4.12,5.05
+Morocco,Hybrid regime,5.25,4.64,5.56,5.63,4.12,5.04
+Guatemala,Hybrid regime,6.92,3.93,5.0,3.13,5.88,4.97
+Uganda,Hybrid regime,4.33,3.21,5.0,6.88,5.29,4.94
+Zambia,Hybrid regime,4.75,2.93,3.89,6.88,5.88,4.86
+Sierra Leone,Hybrid regime,6.58,2.86,3.33,6.25,5.29,4.86
+Bosnia and Herzegovina,Hybrid regime,7.0,2.93,5.56,3.13,5.59,4.84
+Benin,Hybrid regime,3.33,5.36,3.89,5.63,4.71,4.58
+Gambia,Hybrid regime,4.0,4.29,4.44,5.63,4.12,4.49
+Turkey,Hybrid regime,3.5,5.36,5.56,5.63,2.35,4.48
+Pakistan,Hybrid regime,5.67,5.36,3.33,2.5,4.71,4.31
+Haiti,Hybrid regime,4.75,1.71,2.78,6.25,5.59,4.22
+Kyrgyzstan,Hybrid regime,4.75,2.93,5.56,3.13,4.71,4.21
+Lebanon,Hybrid regime,3.5,1.5,6.67,5.0,4.12,4.16
+Ivory Coast,Hybrid regime,4.33,2.86,3.89,5.63,3.82,4.11
+Nigeria,Hybrid regime,5.17,3.57,3.89,3.75,4.12,4.1
+Mali,Authoritarian,5.17,0.0,4.44,5.63,4.41,3.93
+Mauritania,Authoritarian,3.5,3.57,5.0,3.13,4.41,3.92
+Palestine,Authoritarian,3.33,0.14,7.78,4.38,3.53,3.83
+Kuwait,Authoritarian,3.58,3.93,3.89,4.38,3.24,3.8
+Algeria,Authoritarian,3.08,2.5,4.44,5.0,3.82,3.77
+Burkina Faso,Authoritarian,3.0,2.36,4.44,5.0,3.82,3.73
+Angola,Authoritarian,2.25,2.86,5.56,5.0,2.65,3.66
+Iraq,Authoritarian,5.25,0.0,6.67,5.0,1.18,3.62
+Jordan,Authoritarian,2.67,3.93,3.89,4.38,3.24,3.62
+Nicaragua,Authoritarian,0.42,2.86,5.0,5.63,4.12,3.6
+Gabon,Authoritarian,2.58,1.86,4.44,5.0,3.82,3.54
+Mozambique,Authoritarian,2.58,1.43,5.0,5.0,3.53,3.51
+Ethiopia,Authoritarian,0.42,3.57,5.56,5.0,2.35,3.38
+Russia,Authoritarian,2.17,2.14,5.0,3.13,4.12,3.31
+Niger,Authoritarian,2.92,1.14,3.33,4.38,4.71,3.29
+Qatar,Authoritarian,0.0,4.29,2.78,5.63,3.53,3.24
+Zimbabwe,Authoritarian,0.0,2.5,4.44,5.63,3.24,3.16
+Kazakhstan,Authoritarian,0.5,3.21,5.0,3.75,3.24,3.14
+Republic of the Congo,Authoritarian,2.17,2.5,3.89,3.75,3.24,3.11
+Cambodia,Authoritarian,0.0,3.93,3.89,5.63,2.06,3.1
+Rwanda,Authoritarian,1.42,4.29,2.78,4.38,2.65,3.1
+Comoros,Authoritarian,2.08,2.21,3.89,3.75,3.53,3.09
+Eswatini,Authoritarian,0.92,2.86,2.78,5.63,3.24,3.08
+Guinea,Authoritarian,3.5,0.43,4.44,4.38,2.65,3.08
+Myanmar,Authoritarian,1.75,3.93,2.78,4.38,2.35,3.04
+Oman,Authoritarian,0.08,3.93,2.78,4.38,3.82,3.0
+Vietnam,Authoritarian,0.0,2.86,3.89,5.63,2.35,2.94
+Egypt,Authoritarian,1.33,3.21,3.33,5.0,1.76,2.93
+Afghanistan,Authoritarian,3.42,0.64,3.89,2.5,3.82,2.85
+Cuba,Authoritarian,0.0,3.57,3.33,4.38,2.94,2.84
+Togo,Authoritarian,3.17,1.79,3.33,5.0,3.24,2.8
+Cameroon,Authoritarian,1.67,2.14,3.33,4.38,2.35,2.77
+Venezuela,Authoritarian,0.0,1.79,5.0,4.38,2.65,2.76
+Djibouti,Authoritarian,0.42,1.29,3.89,5.63,2.35,2.71
+United Arab Emirates,Authoritarian,0.0,3.93,2.22,5.0,2.65,2.7
+Azerbaijan,Authoritarian,0.5,2.86,3.33,3.75,2.94,2.68
+Guinea-Bissau,Authoritarian,4.92,0.0,2.78,3.13,2.35,2.63
+Belarus,Authoritarian,0.0,2.0,3.89,5.0,2.06,2.59
+Sudan,Authoritarian,0.0,1.79,4.44,5.0,1.47,2.54
+Bahrain,Authoritarian,0.83,2.71,2.78,4.38,1.76,2.49
+China,Authoritarian,0.0,4.29,2.78,3.13,1.18,2.27
+Iran,Authoritarian,0.0,2.5,3.89,3.13,1.47,2.2
+Eritrea,Authoritarian,0.0,2.14,0.56,6.88,1.18,2.15
+Burundi,Authoritarian,0.0,0.0,3.33,5.0,2.35,2.14
+Uzbekistan,Authoritarian,0.08,1.86,2.78,5.0,0.88,2.12
+Saudi Arabia,Authoritarian,0.0,3.57,2.22,3.13,1.47,2.08
+Libya,Authoritarian,0.0,0.0,3.33,3.75,2.65,1.95
+Yemen,Authoritarian,0.0,0.0,3.89,5.0,0.88,1.95
+Tajikistan,Authoritarian,0.0,2.21,2.22,4.38,0.88,1.94
+Equatorial Guinea,Authoritarian,0.0,0.43,3.33,4.38,1.47,1.92
+Laos,Authoritarian,0.0,2.86,1.67,3.75,0.59,1.77
+Turkmenistan,Authoritarian,0.0,0.79,2.22,5.0,0.59,1.72
+Chad,Authoritarian,0.0,0.0,1.67,3.75,2.35,1.55
+Syria,Authoritarian,0.0,0.0,2.78,4.38,0.0,1.43
+Central African Republic,Authoritarian,1.25,0.0,1.11,1.88,2.35,1.32
+Democratic Republic of the Congo,Authoritarian,0.0,0.0,1.67,3.13,0.88,1.13
+North Korea,Authoritarian,0.0,2.5,1.67,1.25,0.0,1.08

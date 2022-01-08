@@ -1,0 +1,10 @@
+---
+output:
+  html_notebook: default
+  html_document: default
+---
+# This is a title
+
+## This is a sub
+
+This is a **notebook**. My *first* one in R.

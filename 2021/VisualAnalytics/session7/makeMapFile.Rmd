@@ -1,0 +1,27 @@
+
+This is a basic code to produce a file:
+
+```{r, message=FALSE, results='hide'}
+myWeb1="https://github.com/Visual-Analytics-Project-UW-EvansSchool/ourMap/raw/main/"
+myWeb2="https://github.com/Visual-Analytics-Project-UW-EvansSchool/mergedData/raw/main/"
+
+
+
+# map
+library(sf)
+mapWorld=read_sf(paste0(myWeb1,"worldMap.geojson"))
+# data
+dataCSV=read.csv(paste0(myWeb2,"merged_data.csv"))
+
+#new map 
+newMap=merge(mapWorld, #map first
+                   dataCSV, 
+                   by='ISO3',all.x=T) 
+st_write(newMap, 
+         dsn = "mapWorldVars.geojson",
+         layer = "mapWorldVars.geojson",
+         driver = "GeoJSON")
+```
+
+The file **newMap** has all the info, even for the rows that did not match.
+

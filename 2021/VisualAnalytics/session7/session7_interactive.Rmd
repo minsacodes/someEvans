@@ -1,0 +1,268 @@
+<br> 
+<center><img src="http://i.imgur.com/sSaOozN.png" width="500"></center>
+
+
+## Course: VISUAL ANALYTICS FOR POLICY AND MANAGEMENT
+
+### Prof. José Manuel Magallanes, PhD 
+* Visiting Professor of Computational Policy at Evans School of Public Policy and Governance, and eScience Institute Senior Data Science Fellow, University of Washington.
+* Professor of Government and Political Methodology, Pontificia Universidad Católica del Perú. 
+
+
+_____
+
+
+# Session 7: Spatial Data - Interactive
+_____
+
+Making interactive plots is a good option when you are planing a visual in a webpage. Let's get the data:
+
+* Getting data:
+
+
+
+```{r, results='hide', eval=TRUE, echo=FALSE, echo=FALSE}
+library(sf)
+myWeb="https://github.com/Visual-Analytics-Project-UW-EvansSchool/ourMap/raw/main/"
+
+mapWorldVars=read_sf(paste0(myWeb,"mapWorldVars.geojson"))
+```
+
+The data above is a map that includes a data frame. Let me use the data first for a simple **scatter plot**:
+
+```{r, warning=FALSE, message=FALSE, eval=TRUE, echo=FALSE}
+library(ggplot2)
+base=ggplot(data=mapWorldVars) + theme_classic()
+points=base + geom_point(aes(x=HDI,y=DemoIndex))
+points
+```
+
+Now let's make the interactive version:
+
+```{r, warning=FALSE, message=FALSE, eval=TRUE, echo=FALSE}
+library(plotly)
+
+ggplotly(points)
+```
+
+We can try a map now:
+
+
+```{r, warning=FALSE, message=FALSE, eval=TRUE, echo=FALSE}
+
+#the text  aesthetics is NOt for ggplot
+colMap= base + geom_sf(aes(fill=DemoIndex,
+                           text=Country),
+                       color=NA)
+
+colMap=colMap + scale_fill_gradient(low = 'red',
+                                    high= 'blue',
+                                    na.value = "grey90")
+colMap
+```
+It will be used by *plotly*:
+
+```{r, eval=TRUE, echo=FALSE}
+colMap%>%ggplotly()
+```
+
+A very interesting package is **leaflet** which will allow for more interesting options:
+
+Let me install and load the necessary packages:
+
+```{r, eval=TRUE,warning=FALSE,message=FALSE,results='hide', echo=FALSE}
+library(RColorBrewer)
+library(leaflet)
+```
+
+Let's see how to color our **numerical data**:
+
+1. Decide the amount of groups:
+
+```{r, eval=TRUE, echo=FALSE}
+numberOfClasses = 5
+```
+
+2. Decide the color palette (I chose one from [here](http://colorbrewer2.org/)):
+```{r, eval=TRUE, echo=FALSE}
+colorForScale='YlGnBu' # color scale
+```
+
+3. Compute the bins
+```{r, eval=TRUE, echo=FALSE}
+bins = quantile(mapWorldVars$DemoIndex, 
+                probs = seq(0, 1, 1/numberOfClasses),
+                na.rm = T) %>% unname()
+bins
+```
+
+
+
+4. Create the **palette function**:
+
+```{r, eval=TRUE, echo=FALSE}
+palFun <- colorBin(colorForScale, 
+                domain = mapWorldVars$DemoIndex,
+                bins = bins)
+```
+
+5. Plot!
+```{r, eval=TRUE,warning=FALSE,message=FALSE, eval=TRUE, echo=FALSE}
+library(leaflet)
+
+#baseLayer
+baseLayer=leaflet(mapWorldVars)%>%
+             addProviderTiles("CartoDB.Positron")
+
+demoPlot=baseLayer %>% 
+          addPolygons(fillColor = ~palFun(DemoIndex),
+                      weight = 0, #border thickness
+                      color = "white",#border color
+                      fillOpacity = 0.7) %>% 
+            addLegend(pal = palFun,
+                      position = 'bottomright',
+                      values = ~DemoIndex)
+demoPlot
+```
+
+
+
+Let me bring the data set on cities we used before, and turn it into a **spatial** element:
+
+```{r, eval=TRUE,warning=FALSE,message=FALSE,results='hide', eval=TRUE, echo=FALSE}
+library(rio)
+
+linkCity="https://github.com/Visual-Analytics-Project-UW-EvansSchool/mergedData/raw/main/otherData/citiesloc.xlsx"
+
+idxcity=import(linkCity)
+
+idxcity_sf = st_as_sf(idxcity, 
+                      coords = c("lng", "lat"),
+                      crs = st_crs(mapWorldVars))
+```
+
+As this is a spatial object:
+
+```{r, eval=TRUE,warning=FALSE,message=FALSE, eval=TRUE, echo=FALSE}
+basep=ggplot(data = mapWorldVars) + geom_sf(fill='grey90',color=NA) + theme_bw()
+
+points1=basep + geom_sf(data=idxcity_sf,
+                       aes(text=city))
+points1
+```
+As before:
+
+```{r, eval=TRUE,warning=FALSE,message=FALSE, echo=FALSE}
+points1%>%ggplotly()
+```
+
+
+Let's cluster these data on cities:
+
+```{r, eval=TRUE,warning=FALSE,message=FALSE, echo=FALSE}
+set.seed(123)
+#distances
+varsidx=c("DIGITAL","HEALTH","INFRASTRUCTURE","PERSONAL")
+distvars2=idxcity_sf[,varsidx]%>%
+          st_drop_geometry() %>%
+             cluster::daisy()
+#clustering
+res.hier2=hclust(distvars2,"ward.D2")
+
+
+# partitioning
+idxcity_sf$clustH=cutree(res.hier2,k=4)%>%as.factor()
+
+#changing level order:
+varsidx=c(varsidx,'clustH')
+idxcity_sf$clustH=factor(idxcity_sf$clustH,
+                         levels=c(4,3,2,1),
+                         labels =c("bad","middle",'good','very good'),ordered=T)
+
+#texts:
+fillLabels=c('1_worst',2,3,'4_best')
+fillTitle="Cities safety"
+nameSize="Population \n(in millions)"
+
+# plotting
+points2= basep + geom_sf(data=idxcity_sf,
+                         aes(fill=clustH,
+                                 size=population/1000000,
+                                 text=city),
+                         shape=21) 
+#now
+points2 = points2 + scale_fill_brewer(palette ='YlOrRd',
+                                direction = -1,
+                                labels=fillLabels,
+                                name=fillTitle)
+points2 =points2 + scale_size(name=nameSize,
+                            range = c(0.2,5))
+points2
+```
+Notice the size legend will not look good, so I will drop it now:
+```{r, eval=TRUE, echo=FALSE}
+(points2 + guides(size=F))%>%ggplotly(tooltip = c("text","clustH"))
+```
+Let me prepare a leaflet for this last visual, this time using a categorical palette:
+
+```{r, eval=TRUE, echo=FALSE}
+catePal <- colorFactor(colorForScale,
+                       domain=idxcity_sf$clustH,
+                       reverse = T)
+
+pointLeaf=baseLayer%>% 
+              addCircleMarkers(data= idxcity_sf,
+                               radius=~population/3000000,
+                               weight = 0,label = ~city,
+                               fillOpacity = 0.7,
+                               color=~catePal(clustH))
+pointLeaf
+```
+
+
+Any basic leaflet map allows interaction, but it is tricky to come back to the original situation. This is how you can do it by adding a button (check icons [here](https://fontawesome.com/icons/home?style=solid):
+
+```{r, eval=TRUE, echo=FALSE}
+# trick: it tell the 'center' of the state and the zoom level
+textFun="function(btn, map){map.setView([51.482577, -0.007659], 1)}"
+
+
+pointLeaf= pointLeaf %>%
+    
+    # adding the button
+    addEasyButton(
+        easyButton(icon="fa-home", # a symbol
+                   title="Zoom to Level 1",
+                   onClick=JS(textFun)))
+
+pointLeaf
+```
+Let me save the **idxcity_sf** object, to use in my dashboards.
+```{r, eval=TRUE, echo=FALSE}
+
+# st_write(idxcity_sf, 
+#          dsn = "cities_idx.geojson",
+#          layer = "cities_idx.geojson",
+#          driver = "GeoJSON")
+```
+
+# LEAFLET DASHBOARDS
+
+
+If you need to plot more than one map, we can try two options:
+
+a) Using **sync** from *leafsync*, where the maps will be synchronized:
+
+```{r, eval=TRUE, echo=FALSE}
+library(leafsync)
+sync(demoPlot,pointLeaf,ncol = 2)
+```
+
+
+
+b) Maps will not be synched:
+
+```{r, eval=TRUE, echo=FALSE}
+latticeView(demoPlot,pointLeaf, ncol = 2)
+```
+

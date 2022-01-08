@@ -1,0 +1,47 @@
+---
+title: "Dashbords from Evans UW"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+
+library(sf)
+library(ggplot2)
+myWeb="https://github.com/Visual-Analytics-Project-UW-EvansSchool/ourMap/raw/main/"
+mapWorldVars=read_sf(paste0(myWeb,"mapWorldVars.geojson"))
+```
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### Chart A
+
+```{r}
+base=ggplot(data=mapWorldVars) + theme_light()
+hist1=base + geom_histogram(aes(mil_expend))
+hist1
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Chart B
+
+```{r}
+base=ggplot(data=mapWorldVars) + theme_light()
+hist2=base + geom_histogram(aes(HDI))
+hist2
+```
+
+### Chart C
+
+```{r}
+base=ggplot(data=mapWorldVars) + theme_light()
+scat=base + geom_point(aes(DemoIndex,HDI))
+scat
+```
+

@@ -1,0 +1,120 @@
+---
+title: "Dashbords from Evans UW"
+output: 
+  flexdashboard::flex_dashboard:
+      orientation: rows
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(magrittr)
+library(sf)
+
+##### DATA
+link='https://github.com/EvansDataScience/data/raw/master/contriWA.RDS'
+contriWA=readRDS(file=url(link))
+WA_zip_contri=aggregate(data=contriWA,amount~contributor_zip, sum)
+WA_zip_contri$amount=WA_zip_contri$amount/1000
+
+##### MAP
+
+mapLink="https://github.com/EvansDataScience/data/raw/master/WAzips.json"
+library(geojsonio)
+PROJmap="+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+wazipMap=topojson_read(mapLink,crs=PROJmap,stringsAsFactors = FALSE)
+library(lwgeom)
+wazipMap=st_make_valid(wazipMap)
+library(rmapshaper)
+wazipMap=ms_simplify(wazipMap)
+
+##### DATA AND MAP MERGE
+layerContrib=merge(wazipMap,WA_zip_contri, 
+                   by.x='ZCTA5CE10', 
+                   by.y='contributor_zip',
+                   all.x=F) 
+
+##### POINTS
+contriWA_geo= st_as_sf(contriWA, 
+                       coords = c("Lon", "Lat"),
+                       crs = sp::CRS(PROJmap))
+#SUBSET OF POINTS
+contriWA_geo2010=contriWA_geo[contriWA_geo$election_year==2010,]
+
+
+###PLOTS
+
+# histogram
+library(ggplot2)
+histogram= ggplot(WA_zip_contri,aes(x=amount)) +  geom_histogram()
+
+#boxplot
+boxplot=ggplot(WA_zip_contri,aes(y=amount)) +
+    geom_boxplot()
+
+# map1
+
+library(RColorBrewer)
+library(leaflet)
+numberOfClasses = 5
+colorForScale='YlGnBu'
+paletteFun=colorQuantile(colorForScale,domain = NULL,
+                         n = numberOfClasses)
+baseLayer = leaflet() %>%addProviderTiles("CartoDB.Positron")
+final1 = baseLayer %>%
+         addPolygons(data=layerContrib,
+                     weight = 0, 
+                     opacity =  1,
+                     fillOpacity = 0.7, 
+                     fillColor = ~paletteFun(amount))
+
+final1= final1 %>% addLegend(data=layerContrib,"bottomright", pal = paletteFun, 
+          values = ~amount,title = "Contributions",
+          opacity = 1,
+          labFormat = function(type="quantile", cuts, p) {
+              n = length(cuts) 
+              lower=round(cuts[-n],2)
+              upper=round(cuts[-1],2)
+              cuts = paste0(lower, " - ", upper) 
+              }
+     )
+
+#map 2
+final2= leaflet(contriWA_geo2010) %>% 
+        addTiles() %>%
+        addCircleMarkers(clusterOptions = markerClusterOptions())
+
+```
+
+## Row
+
+
+### Histogram of money given to campaings
+
+```{r, eval=TRUE,warning=FALSE,message=FALSE,results='hide'}
+histogram
+```
+
+### Boxplot of money given to campaings
+
+```{r, eval=TRUE,warning=FALSE,message=FALSE,results='hide'}
+
+boxplot
+
+```
+
+## Row
+
+### Where is most money for campaigns coming from?
+
+```{r}
+
+final1
+```
+
+
+### How many people decided to fund politicians in 2010?
+
+```{r}
+final2
+```
+

@@ -1,0 +1,31 @@
+
+
+```{r collecting, eval=TRUE}
+link='https://github.com/EvansDataScience/data/raw/master/hdidemocia.RDS'
+
+# a RDS file from the web needs:
+myFile=url(link)
+
+# reading in data:
+fromPy=readRDS(file = myFile)
+
+```
+
+
+```{r}
+# reset indexes to R format:
+row.names(fromPy)=NULL
+```
+
+```{r}
+str(fromPy)
+```
+
+
+```{r}
+link="https://github.com/EvansDataScience/data/raw/master/corruption.csv"
+
+mydata2=read.csv(link)
+```
+
+

@@ -1,0 +1,319 @@
+<br> 
+<center><img src="http://i.imgur.com/sSaOozN.png" width="500"></center>
+
+
+## Course:  COMPUTATIONAL THINKING FOR GOVERNANCE ANALYTICS
+
+### Prof. José Manuel Magallanes, PhD 
+* Visiting Professor of Computational Policy at Evans School of Public Policy and Governance, and eScience Institute Senior Data Science Fellow, University of Washington.
+* Professor of Government and Political Methodology, Pontificia Universidad Católica del Perú. 
+
+
+_____
+<a id='part1'></a>
+
+# Session 6: Unsupervised ML in R (II) and Supervised ML.
+
+Collect the data we prepared in Python:
+
+```{r, eval=TRUE}
+link='https://github.com/UWDataScience2020/data/raw/master/hdidemocia.RDS'
+# a RDS file from the web needs:
+myFile=url(link)
+
+# reading in data:
+fromPy=readRDS(file = myFile)
+
+# reset indexes to R format:
+row.names(fromPy)=NULL
+```
+
+Verifying data structure:
+
+```{r, eval=TRUE}
+str(fromPy,width = 70,strict.width='cut')
+```
+
+
+# <font color="red">Unsupervised ML: Dimensionality Reduction</font>
+
+You would like turn the 5 dimensions of democracy index into one, without following an arithmetic approach, but an algebraic one, instead. Dimension reduction is the job of latent variable analysis, and that's the way proposed here.
+
+Let me first create some fake columns that represent values I do not have:
+```{r, eval=TRUE}
+library(matlab)
+top=10*as.vector(ones(1,5))
+bottom=as.vector(zeros(1,5))
+# those become two rows of a data frame
+limitCases=as.data.frame(rbind(bottom,top))
+limitCases
+```
+
+I have create a two-row data frame only because the original data do not have those values.
+
+Let me subset our original data frame:
+```{r, eval=TRUE}
+subDemo=fromPy[,c(8:12)]
+```
+
+Now Let me append the small one to this last one.
+
+```{r, eval=TRUE}
+# FIRST, we need both DFs share same column names
+names(limitCases)=names(subDemo)
+# appending:
+subDemo=rbind(subDemo,limitCases)
+```
+
+Our *subDemo* DF has the data to compute the one index we need. I will show the technique called **confirmatory factor analysis**:
+
+```{r, eval=TRUE}
+names(subDemo)
+```
+
+
+```{r, eval=TRUE}
+library(lavaan)
+
+model='
+dem=~Electoralprocessandpluralism + Functioningofgovernment + Politicalparticipation + Politicalculture + Civilliberties
+'
+
+fit<-cfa(model, data = subDemo,std.lv=TRUE)
+indexCFA=lavPredict(fit)
+```
+
+The index computed is not in a range from 1 to 10:
+```{r, eval=TRUE}
+library(magrittr)
+indexCFA%>%head(10)
+```
+
+
+We force its return to "0 to 10":
+
+```{r, eval=TRUE}
+library(BBmisc)
+indexCFANorm=normalize(indexCFA, 
+                       method = "range", 
+                       margin=2, # by column
+                       range = c(0, 10))
+```
+
+The last rows need to be eliminated:
+```{r, eval=TRUE}
+tail(indexCFANorm)
+```
+
+So, this is our index:
+```{r, eval=TRUE}
+fromPy$demo_FA=head(indexCFANorm,-2)%>%as.vector()
+str(fromPy)
+```
+
+Let me plot this index:
+```{r, eval=TRUE}
+library(ggplot2)
+base=ggplot(data=fromPy,
+            aes(x=demo_FA))
+base+geom_histogram()
+```
+
+
+Let me compare the new index with the original score:
+```{r, eval=TRUE}
+base=ggplot(data=fromPy,
+            aes(x=demo_FA,y=Score))
+base+geom_point()
+```
+
+Let me see some evaluation measures of our index for democracy:
+
+```{r, eval=TRUE}
+evalCFA1=parameterEstimates(fit, standardized =TRUE)
+```
+
+* Loadings
+```{r, eval=TRUE}
+evalCFA1[evalCFA1$op=="=~",c('rhs','std.all','pvalue')]
+```
+
+* Some coefficients:
+
+```{r, eval=TRUE}
+evalCFA2=as.list(fitMeasures(fit))
+```
+
+* You want p.value greater than 0.05:
+
+```{r, eval=TRUE}
+evalCFA2[c("chisq", "df", "pvalue")] 
+```
+
+* You want the Tucker-Lewis > 0.9:
+
+```{r, eval=TRUE}
+evalCFA2$tli # > 0.90
+```
+
+* You want RMSEA < 0.05:
+
+```{r, eval=TRUE}
+evalCFA2[c( 'rmsea.ci.lower','rmsea','rmsea.ci.upper')] 
+```
+
+You can see how it looks:
+
+```{r, eval=TRUE}
+library(semPlot)
+semPaths(fit, what='std', nCharNodes=10, sizeMan=8,
+         edge.label.cex=1.5, fade=T,residuals = F)
+```
+
+
+# <font color="red">Supervised ML: Regression</font>
+
+* Basic steps
+
+```{r, eval=TRUE}
+# hypothesis 1:
+
+# The more democratic and the better HDI 
+# the less contaminated a country is, 
+# controlling continent
+#row.names(fromPy)=fromPy$Country
+hypo1=formula(co2_in_MT~ demo_FA + Humandevelopmentindex + Continent)
+regre1=glm(hypo1,data = fromPy,family = 'gaussian')
+```
+
+```{r, eval=TRUE}
+summary(regre1)
+```
+
+```{r, eval=TRUE}
+library(sjPlot)
+
+plot_models(regre1,vline.color = "grey")
+```
+
+
+* Avoiding overfitting:
+
+1. Prepare the data sets:
+```{r, eval=TRUE}
+library(caret)
+set.seed(123)
+training.samples = fromPy$co2_in_MT %>%
+                      createDataPartition(p = 0.8, list = FALSE)
+train.data = fromPy[training.samples, ]
+test.data  = fromPy[-training.samples, ]
+```
+
+2. Regress with train data
+
+a. Build the model 
+```{r, eval=TRUE}
+regre1a=glm(hypo1,data = train.data,family = 'gaussian')
+```
+
+b. See results:
+```{r, eval=TRUE}
+summary(regre1a)
+```
+
+c. Make predictions on test data 
+```{r, eval=TRUE}
+predictions <- regre1a %>% predict(test.data)
+```
+
+d. Assess performance 
+```{r, eval=TRUE}
+cor(predictions, test.data$co2_in_MT)
+```
+
+
+
+
+
+```{r, eval=TRUE}
+# hypothesis 2:
+
+# The democracy and level of contamination
+# affect  the level of human development,
+# controlling continent
+
+fromPy$HDIdico=ifelse(fromPy$Humandevelopmentindex>
+                          median(fromPy$Humandevelopmentindex),
+                      1,0)
+
+
+hypo2=formula(HDIdico~ demo_FA + co2_in_MT + Continent)
+regre2=glm(hypo2,data = fromPy,family = "binomial")
+```
+
+```{r, eval=TRUE}
+summary(regre2)
+```
+
+
+```{r, eval=TRUE}
+# interpracion usando marginal effects:
+library(margins)
+# 
+(model = margins(regre2))
+```
+```{r, eval=TRUE}
+(margins=summary(model))
+```
+
+
+```{r, eval=TRUE}
+
+base= ggplot(margins,aes(x=factor, y=AME)) + geom_point()
+plot2 = base + theme(axis.text.x = element_text(angle = 80,
+                                              size = 6,
+                                              hjust = 1))
+plot2    
+```
+```{r, eval=TRUE}
+plot2 +  geom_errorbar(aes(ymin=lower, ymax=upper))
+```
+
+
+* Avoiding overfitting:
+
+1. Prepare the data sets:
+```{r, eval=TRUE}
+training.samples = fromPy$HDIdico %>%
+                      createDataPartition(p = 0.8, list = FALSE)
+train.data = fromPy[training.samples, ]
+test.data  = fromPy[-training.samples, ]
+```
+
+2. Regress with train data
+
+a. Build the model 
+```{r, eval=TRUE}
+regre2a=glm(hypo2,data = train.data,family = 'binomial')
+```
+
+b. See results:
+```{r, eval=TRUE}
+summary(regre2a)
+```
+
+c. Make predictions on test data 
+```{r, eval=TRUE}
+
+predictions <- regre2a %>% predict(newdata=test.data,type='response')
+predictions <- ifelse(predictions > 0.5,1,0)
+```
+
+d. Assess performance 
+```{r, eval=TRUE}
+confusionMatrix(data=as.factor(predictions),
+                reference=as.factor(test.data$HDIdico))
+```
+
+
+

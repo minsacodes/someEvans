@@ -1,0 +1,319 @@
+<br> 
+<center><img src="http://i.imgur.com/sSaOozN.png" width="500"></center>
+
+
+## Course: VISUAL ANALYTICS FOR POLICY AND MANAGEMENT
+
+### Prof. José Manuel Magallanes, PhD 
+* Visiting Professor of Computational Policy at Evans School of Public Policy and Governance, and eScience Institute Senior Data Science Fellow, University of Washington.
+* Professor of Government and Political Methodology, Pontificia Universidad Católica del Perú. 
+
+
+_____
+
+
+# Session 5: Tabular data: Multivariate data
+
+
+_____
+
+
+We collect multiple variables for a particular purpose, knowing that social complexity can hardly be directly explained with bivariate or univariate approaches. As it is difficult to visualize information with high dimensional data; you should consider summarising all these variable into a composite index (latent), as I showed in session 2.
+
+However, if you have a good reason to keep the original data, let me show you some plots you may use.
+
+_____
+
+
+This time, I will use the [data about city safety](https://jpn.nec.com/en/global/ad/insite/download/economist/en/data_workbook_dl.html):
+
+```{r, eval=TRUE}
+library(rio)
+
+link="https://github.com/EvansDataScience/data/raw/master/safeCitiesIndexAll.xlsx"
+
+safe=import(link)
+```
+
+
+These several variables are telling us information about the safety levels of some cities in the world, and are related to **D**_igital_, **H**_ealth_, **I**_nfrastructure_, and **P**_ersonal_ dimensions. For each of these dimensions, there are measures of actions taken (**In**), and results (**Out**). We have 49 variables.
+
+Would making a plot of 49 variables  be a good idea?
+
+Let's make  a heatmap. First, we need some reshaping, because the input data should be in long format:
+* This is _wide_:
+
+```{r, eval=TRUE}
+head(safe)
+```
+*This is _long_:
+
+```{r, eval=TRUE}
+library(reshape2)
+
+safeL=melt(safe, # all the data
+           id.vars = 'city') # unique id per row
+head(safeL)
+```
+
+Again, the _melting_ changed the direction of the data: the columns were sent into rows. This looks like panel data format or _long format_ (the original is the _wide format_). Now, the heatmap using this format:
+
+```{r, eval=TRUE}
+library(ggplot2)
+base = ggplot(data = safeL, aes(x = variable,
+                                y =city)) 
+
+heat1= base +  geom_tile(aes(fill = value)) 
+heat1
+```
+
+Here you can see what rows have higher or lower colors on what set of variables. You can add color pallette:
+
+```{r, eval=TRUE}
+#inverse color -1
+heat2 = heat1 + scale_fill_gradient(low = 'grey',
+                                    high = "black")
+heat2
+```
+
+The column and row names need some work:
+
+```{r, eval=TRUE}
+heat2 + theme(axis.text.x = element_text(angle = 90, 
+                                         hjust = 1,
+                                         size = 4),
+              axis.text.y = element_text(size = 4))
+```
+
+
+The last heatmap above could be 'ordered' so that column and row positions can give us more information:
+
+```{r, eval=TRUE}
+# change in REORDER
+base= ggplot(data = safeL, aes(x = reorder(variable, 
+                                           value, median),
+                               y =reorder(city,
+                                          value, median)))
+# THIS IS THE SAME
+base + geom_tile(aes(fill = value)) + 
+    scale_fill_gradient(low = 'grey90',high = "grey50") +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1,size = 4),
+              axis.text.y = element_text(size = 4))
+```
+
+
+This is still hard to read. An alternative could be to average each dimension. Let me show you this example:
+
+a. Variables you need to average: columns with the text 'D_In_': 
+
+```{r, eval=TRUE}
+library(magrittr)
+#notice I do not need the 'city':
+safe[,c(grep("D_In_", names(safe) ))]%>%head()
+```
+
+b. Compute and save the average **per row**:
+
+```{r, eval=TRUE}
+
+
+#averaging only numbers, as 'city' is not in data:
+apply(safe[,c(grep("D_In_",names(safe) ))], #data
+      1, #by row
+      mean)%>% #function to apply by row to data
+         round(2) # round the result
+
+```
+
+c. Create that column:
+
+```{r, eval=TRUE}
+safe$DIN=apply(safe[,c(grep("D_In_",names(safe) ))],1,mean)%>%round(2)
+```
+
+Now let's do the rest:
+
+```{r, eval=TRUE}
+safe$DOUT=apply(safe[,c(grep("D_Out_",names(safe) ))],1,mean)%>%round(2)
+
+safe$HIN=apply(safe[,c(grep("H_In_",names(safe) ))],1,mean)%>%round(2)
+
+safe$HOUT=apply(safe[,c(grep("H_Out_", names(safe) ))],1,mean)%>%round(2)
+
+safe$IIN=apply(safe[,c(grep("I_In_", names(safe) ))],1,mean)%>%round(2)
+
+safe$IOUT=apply(safe[,c(grep("I_Out_", names(safe) ))],1,mean)%>%round(2)
+
+safe$PIN=apply(safe[,c(grep("P_In_", names(safe) ))],1,mean)%>%round(2)
+
+safe$POUT=apply(safe[,c(grep("P_Out_", names(safe) ))],1,mean)%>%round(2)
+
+
+```
+
+
+Let's keep all the **Input** variables:
+
+```{r, eval=TRUE}
+safeINS=safe[,c(1,grep("IN$", colnames(safe)))] # '$' for 'end with'.
+head(safeINS)
+
+```
+Let's rename the vars in this data set:
+```{r, eval=TRUE}
+names(safeINS)=c("city",'DIGITAL','HEALTH','INFRASTR','PERSONAL')
+```
+
+Remember we need to reshape:
+
+```{r, eval=TRUE}
+safeINS_long=melt(safeINS,id.vars = 'city')
+```
+
+Let's redo our heat map:
+```{r, eval=TRUE}
+base= ggplot(data = safeINS_long, 
+             aes(x = reorder(variable,
+                             value, 
+                             median),
+                 y =reorder(city,
+                            value, 
+                            median)))
+
+base + geom_tile(aes(fill = value)) + 
+       scale_fill_gradient(low = 'grey90',
+                           high = "grey50") +
+       theme(axis.text.x = element_text(angle = 90,
+                                        hjust = 1,
+                                        size = 4),
+             axis.text.y = element_text(size = 4))
+```
+
+
+When you have this limited amount of variables, you may try a radar plot:
+
+
+```{r, fig.width=15, fig.height=12, eval=TRUE}
+base  = ggplot(safeINS_long, 
+               aes(x = variable, 
+                   y = value, 
+                   group = city)) + #new
+        geom_polygon(fill = 'gray',
+                     col='orange') 
+
+plot1 = base + coord_polar()
+
+plot2 = plot1 + facet_wrap(~city,# one plot per city
+                           ncol = 10) # ten plot per row
+plot2
+```
+
+The radar plot describes how a cases is doing in every dimension (we have four dimensions). 
+
+We could improve the plot by ordering the facet and increasing the font size of the name of dimensions (X), and having less columns:
+
+```{r, fig.width=15, fig.height=12, eval=TRUE}
+
+plot2 = plot1 + facet_wrap(~reorder(city,value, median, order=TRUE),ncol = 10)
+
+
+plot3 = plot2 + theme(axis.text.x = element_text(size = 12)) 
+plot3 
+```
+
+We can also highlight the case's names, let's change the _theme_ from above:
+
+```{r, fig.width=15, fig.height=12, eval=TRUE}
+plot4 = plot3 + theme(legend.position="none",
+                strip.text = element_text(size = 20)) #here!!!
+plot4 
+```
+
+You could add extra customization if wanted:
+
+```{r, fig.width=15, fig.height=12, eval=TRUE}
+
+### arguments
+newBackGroundGrid=element_rect(fill = "white",
+                         colour = "red",
+                         size = 0.5,
+                         linetype = "dashed")
+
+newBackLineGrid=element_line(size = 1,
+                      linetype = 'solid',
+                      colour = "lightblue")
+
+### more customization
+plot4+ theme(panel.background = newBackGroundGrid,
+             panel.grid.major = newBackLineGrid)
+                        
+```
+
+
+The colors above **are not** the best choice, I just used them for you to notice where to make changes. Keep in mind that areas are difficult to compare, so the plots above might be used with care.
+
+Finally, let me produce a plot using all the input variables, but reducing their dimensionality with a technique names multidimensional scaling.
+
+You can use multidimensional scaling to represent all the variables in a two dimensional plot. This will create a **map** that will allow you to visualize neighbourhoods of cases. 
+
+Let's see:
+
+a. Get all the **input** columns:
+
+```{r, eval=TRUE}
+allIN=safe[,c(grep("_In_", names(safe) ))]
+names(allIN)
+```
+
+b. Use the *id* as row names:
+
+```{r, eval=TRUE}
+rownames(allIN)=safe$city
+```
+
+c. Compute the distance among cases:
+
+```{r, eval=TRUE}
+dist_in_safe=dist(allIN)
+```
+
+d. Get map using multidimensional scaling:
+```{r, eval=TRUE}
+theMap=cmdscale(dist_in_safe,k = 2)%>%
+  as.data.frame()
+theMap
+```
+
+Let plot the countries:
+
+```{r, eval=TRUE}
+
+library(ggpubr)
+
+points1= ggscatter(theMap, x = "V1", y = "V2", 
+          size = 2,label = rownames(theMap)) 
+points1
+
+```
+
+The default labelling is not good. Let's use *ggrepel* instead:
+
+```{r, eval=TRUE}
+library(ggrepel)
+
+points1= ggscatter(theMap, x = "V1", y = "V2", 
+          size = 2) + theme_void() # for NO dimensions
+points1 + 
+    geom_text_repel(aes(label=rownames(theMap)),
+                    size=1.5) 
+
+```
+
+
+
+
+
+
+
+
+

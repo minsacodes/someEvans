@@ -1,0 +1,343 @@
+<br> 
+<center><img src="http://i.imgur.com/sSaOozN.png" width="500"></center>
+
+
+## Course: VISUAL ANALYTICS FOR POLICY AND MANAGEMENT
+
+### Prof. José Manuel Magallanes, PhD 
+* Visiting Professor of Computational Policy at Evans School of Public Policy and Governance, and eScience Institute Senior Data Science Fellow, University of Washington.
+* Professor of Government and Political Methodology, Pontificia Universidad Católica del Perú. 
+
+
+_____
+
+
+# Session 5: Tabular data: Bivariate Cat-Num
+
+This time, I will use the [data about crime](https://data.seattle.gov/Public-Safety/Crime-Data/4fs7-3vj5) from the Seattle Open Data portal:
+
+```{r collect, eval=TRUE}
+# collecting the data
+link="https://github.com/EvansDataScience/data/raw/master/crime.RData"
+load(file = url(link))
+```
+
+
+The data available are:
+
+```{r names, eval=TRUE}
+# variables in the data:
+names(crime)
+```
+
+
+We can also take a quick statistical look:
+
+```{r summary, eval=TRUE}
+# some stats:
+summary(crime)
+```
+
+In this material, we are interested in how a categorical variable can help us better understand a numeric variable. Given the data we will be using, the curiosity and experience of the analyst is critical in mining the data to reveal some insight, as numerical data have longer value ranges than categorical data.
+
+In the previous data set we had a variable that informs the amount of days it takes someone to report a crime:
+
+```{r summaryTime, eval=TRUE}
+# stats of days to report
+# notice the spread of values.
+summary(crime$DaysToReport)
+```
+
+Let me see the crimes that took the longest:
+
+```{r reordering, eval=TRUE}
+# 'order' decreasing
+
+library(magrittr) # for %>%
+crime[order(-crime$DaysToReport),c('year','DaysToReport')]%>%head(20)
+```
+
+Do you think this is right? The longest one was from 1908. Let's assume it is OK (but I am pretty sure it is not).
+
+There are several good categorical variables that can be used to study the behavior of the time it takes to report a crime. Let's use _precint_ (only the ones non missing):
+
+```{r aggregate, eval=TRUE}
+# non missing 'precint'
+crime=crime[complete.cases(crime$Precinct),]
+
+# summary: mean by groups
+aggregate(data=crime, DaysToReport~Precinct,mean)
+```
+
+
+Above, you see the mean time (in days) it takes per precint for people to notify a crime. You can suddenly create a plot in your mind just by reading those values, but the plot you imagine may be far from this one:
+
+```{r boxNumCat1, eval=TRUE}
+# boxplot of days to report per precint
+
+library(ggplot2)
+base=ggplot(data=crime,
+            aes(x=Precinct,y=DaysToReport))
+
+base + geom_boxplot()
+```
+
+
+The plot above would not give so much insight, there is so much noise. The fact is that a better summary would tell us more to consider:
+
+```{r tapplySummary, eval=TRUE}
+# aggregate using "summary" function
+# Distribution of days to report?
+
+aggregate(data=crime,DaysToReport~Precinct,summary)
+```
+
+From the information above, you know that for each precint, the 75% of crimes are reported in a day or less. If we consider that situation as the expected behavior, let me omit those cases. Let me explore by week or more using **ggarrange**:
+
+
+```{r weeksandabove, eval=TRUE}
+# several boxplots, from week and above
+
+library(ggpubr)
+
+base7=ggplot(data=crime[crime$DaysToReport>=7,],
+            aes(x=Precinct,y=DaysToReport)) 
+box7=base7 + geom_boxplot() + labs(title = "week and above")
+
+base30=ggplot(data=crime[crime$DaysToReport>=30,],
+            aes(x=Precinct,y=DaysToReport))
+box30=base30 + geom_boxplot() + labs(title = "month and above")
+
+base180=ggplot(data=crime[crime$DaysToReport>=180,],
+            aes(x=Precinct,y=DaysToReport)) 
+box180=base180 + geom_boxplot() + labs(title = "half year and above")
+
+
+base365=ggplot(data=crime[crime$DaysToReport>=360,],
+            aes(x=Precinct,y=DaysToReport)) 
+box365=base365 + geom_boxplot() + labs(title = "year and above")
+
+
+
+#all in one:
+ggarrange(box7,box30,box180,box365)
+
+```
+
+Up to this point, you need to be planing a good _story_. The situation is different for each case, but let's build our story from the crimes that take a year or longer to report.
+
+The year the crime occurred would be another variable to consider, to see if we can filter more cases:
+
+```{r casesCountYear, eval=TRUE}
+# check crimes per year to filter again
+table(crime$year)
+```
+
+If we were to plot by year, several years before 2000 are too few. Let's get rid of those old cases and keep the crimes that took a year or more to report:
+
+```{r crimeAfter2000, eval=TRUE}
+# let's keep durantion longer than a year,
+# and after 2000
+
+# new filtered data frame
+crimeY2000=crime[crime$year>=2000 & crime$DaysToReport>=365,]
+
+#counting
+table(crimeY2000$Precinct)
+```
+
+
+Now, we see a better boxplot:
+
+```{r boxpAfter2000, eval=TRUE}
+# box plot for new filtered data frame:
+
+base=ggplot(data=crimeY2000,
+            aes(x=Precinct,y=DaysToReport))
+base + geom_boxplot() 
+```
+
+
+
+For sure, it would be better if the numerical units  were in years:
+
+```{r convertYear, eval=TRUE}
+# create new variable in YEARS:
+crimeY2000$YearsToReport=crimeY2000$DaysToReport/365
+
+# new box plot, only vertical units change
+base=ggplot(data=crimeY2000,
+            aes(x=Precinct,y=YearsToReport))
+base + geom_boxplot() 
+```
+
+If your story is about the similarity of distributions among precincts, you can start improving the last plots. But in case you need to show some variety you can try another relevant categorical variable.
+
+Let's try _crimecat_ and _year_:
+
+```{r exploreBOX2, eval=TRUE}
+
+#boxplot by Year
+base=ggplot(data = crimeY2000,
+            aes(x=as.factor(year),
+                y=YearsToReport))
+boxByYear=base + geom_boxplot()
+
+#boxplot by Crime
+base=ggplot(data =crimeY2000,
+            aes(x=reorder(crimecat,YearsToReport), # using reorder!
+                y=YearsToReport))
+boxByCrime=base + geom_boxplot() 
+boxByCrime= boxByCrime + theme(axis.text.x = element_text(angle = 45,
+                                                          hjust = 1,
+                                                          size = 5))
+# combining plots
+ggarrange(boxByYear,boxByCrime,ncol = 1)
+
+```
+
+Let's focus in years to report, the top plot. It may be the case that your audience does not know how to read a boxplot. It is a great plot, but encoding so much statistical information. Then we can go simple, and use lines connecting the easy-to-understand points in every boxplot:
+
+```{r boxBYE, eval=TRUE}
+# plotting the MIN values:
+base  = ggplot(crimeY2000,aes(x=factor(year), y=YearsToReport))
+mins = base + stat_summary(fun.y=min, # function for 'y' is min()
+                           geom="point",
+                           size=2,
+                           aes(group=1,col='Min'))
+mins # just the min values
+
+```
+
+Let me add the max values:
+
+```{r, eval=TRUE}
+# plotting the MAX values on top:
+minsMaxs= mins + stat_summary(fun.y=max,
+                              geom="point",
+                              size=2,
+                              aes(group=1,col='Max'))
+
+minsMaxs
+
+```
+
+Adding the median:
+
+```{r, eval=TRUE}
+# another layer with MEDIANS
+minsMaxsMd= minsMaxs + stat_summary(fun.y=median,
+                                    geom="line",
+                                    size=2,
+                                    aes(group=2,col='Median'))
+minsMaxsMd
+```
+
+Let's take control of the colors by customizing the legend:
+
+```{r, eval=TRUE}
+# Change color of lines:
+all1=minsMaxsMd + scale_colour_manual(name="Stats",
+                                      values=c("black", "grey50","grey90") #alphabetic
+                                      )
+all1 + theme_classic()
+```
+
+
+Now, let's complete the story by telling how the data filtered behaves, that is, the crimes that took less than a year to report since 2000 (we will not include data from before):
+
+```{r crimeWeek, eval=TRUE}
+# data we did not use:
+
+crimeLessYear2000=crime[(crime$DaysToReport<365) & (crime$year>=2000),]
+
+```
+
+```{r plotCrimeWeek, eval=TRUE}
+#plotting it as before:
+base = ggplot(crimeLessYear2000,aes(x=factor(year), y=DaysToReport)) 
+mins = base + stat_summary(fun.y=min,size=2,
+                           geom="line", 
+                           aes(group=1,col='Min'))
+minsMaxs= mins + stat_summary(fun.y=max,
+                              geom="line",size=2,
+                              aes(group=1,col='Max'))
+minsMaxsMd= minsMaxs + stat_summary(fun.y=median,
+                                    geom="line",size=2,
+                                    aes(group=1,col='Median'))
+all2=minsMaxsMd + scale_colour_manual(name="Stats",
+                                      values=c("black", "grey50","grey90") 
+                                      )
+all2 + theme_classic()
+```
+
+## Some statistical considerations
+
+It is very common to hear in scientific texts about the mean difference test known as the **one-way anova**, which beyond describing, as we have done, seeks to show if the mean of the numerical variable varies or not accross the values of the categorical groups.
+
+So, to know the average time it takes to report a crime:
+
+```{r anova, eval=TRUE}
+
+#checking the mean per factor value.
+#are crime in precints different on average?
+
+aggregate(data=crimeY2000,YearsToReport~Precinct, mean)
+```
+
+```{r CI, eval=TRUE}
+
+#are crime in precints different on average?
+library(Rmisc)
+
+group.CI(YearsToReport ~ Precinct, 
+         data=crimeY2000, 
+         ci = 0.95)
+```
+
+```{r plotCI, eval=TRUE}
+#are crime in precints different on average?
+
+# introducing ggpubr
+library(ggpubr)
+ggline(data=crimeY2000,x = "Precinct", y = "YearsToReport",
+       add = 'mean_ci') 
+
+```
+```{r testAnova, eval=TRUE}
+# Compute the analysis of variance
+res.aov <- aov(YearsToReport ~ Precinct, data = crimeY2000)
+
+# Summary of the analysis
+summary(res.aov)
+```
+```{r Tukey, eval=TRUE}
+# where are the differences detected in aov?
+TukeyHSD(res.aov)
+```
+```{r TukeyFiltered, eval=TRUE}
+# where are the differences detected in aov?
+# result into a data frame
+ResPar=as.data.frame(TukeyHSD(res.aov)$Precinct)
+ResPar[ResPar$`p adj`<0.05,]
+```
+
+```{r kruskal, eval=TRUE}
+# non parametric
+kruskal.test(YearsToReport ~ Precinct, data = crimeY2000)
+```
+```{r dunn, eval=TRUE}
+# where are the differences detected in Kruskal?
+library(FSA)
+
+dunnTest(YearsToReport ~ Precinct, data = crimeY2000)
+```
+
+
+```{r dunnFiltered, eval=TRUE}
+# where are the differences detected in Kruskal?
+# result into a data frame
+ResNonPar=dunnTest(YearsToReport ~ Precinct, data = crimeY2000)$res
+ResNonPar[ResNonPar$P.adj<0.05,]
+```
+

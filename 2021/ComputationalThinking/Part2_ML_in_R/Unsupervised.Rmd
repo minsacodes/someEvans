@@ -1,0 +1,474 @@
+<br> 
+<center><img src="http://i.imgur.com/sSaOozN.png" width="500"></center>
+
+
+## Course:  COMPUTATIONAL THINKING FOR GOVERNANCE ANALYTICS
+
+### Prof. José Manuel Magallanes, PhD 
+* Visiting Professor of Computational Policy at Evans School of Public Policy and Governance, and eScience Institute Senior Data Science Fellow, University of Washington.
+* Professor of Government and Political Methodology, Pontificia Universidad Católica del Perú. 
+
+
+_____
+<a id='part1'></a>
+
+# Session 6: Multivariate Analytics in R (I)
+
+Collect the data we prepared in Python:
+
+```{r}
+link='https://github.com/UWDataScience2020/data/raw/master/hdidemocia.RDS'
+# a RDS file from the web needs:
+myFile=url(link)
+
+# reading in data:
+fromPy=readRDS(file = myFile)
+
+# reset indexes to R format:
+row.names(fromPy)=NULL
+```
+
+
+
+# <font color="red">Data frames in R</font>
+
+Data frames are a native structure for R. 
+```{r}
+str(fromPy)#,width = 70,strict.width='cut')
+```
+
+
+
+
+## Querying data frames:
+
+* What is the country with highest HDI?
+```{r}
+# you could get more than one
+condition1=fromPy$Humandevelopmentindex==max(fromPy$Humandevelopmentindex)
+fromPy[condition1,]
+```
+
+```{r}
+#or
+fromPy[condition1,'Country']
+```
+
+You also have:
+```{r}
+# in multiple max, you get only the first one.
+fromPy[which.max(fromPy$Humandevelopmentindex),'Country']
+```
+
+* What is the country with highest HDI in America?
+
+```{r}
+# from AMERICA:
+AMERICA=c('South America','North America')
+condition2=fromPy$Continent %in% AMERICA
+subAmerica=fromPy[condition2,]
+
+subAmerica[condition1,'Country']
+```
+
+A version using **pipes** and **dplyr**:
+
+```{r}
+library(magrittr)
+library(dplyr)
+
+fromPy%>%
+    filter(Continent %in% AMERICA)%>%
+    filter(Humandevelopmentindex==max(Humandevelopmentindex))%>%
+    select(Country)
+```
+
+* What is the country with highest HDI not from America?
+
+```{r}
+subNotAmerica=fromPy[!condition2,]
+
+subNotAmerica[condition1,'Country']
+```
+
+A version using **pipes** and **dplyr**:
+
+```{r}
+fromPy%>%
+    filter(!Continent %in% AMERICA)%>%
+    filter(Humandevelopmentindex==max(Humandevelopmentindex))%>%
+    select(Country)
+```
+
+
+## Aggregating/summarizing data frames:
+
+* The average HDI per continent:
+
+```{r}
+# the result is a data frame:
+aggregate(data=fromPy,Humandevelopmentindex ~ Continent,FUN=mean)
+```
+
+A version using **pipes** and **dplyr**:
+
+```{r}
+fromPy%>%
+    group_by(Continent) %>% 
+    summarise(mean(Humandevelopmentindex))
+```
+
+You can make more complex aggregations that way:
+```{r}
+fromPy%>%
+    group_by(Continent) %>% 
+    summarise(meanHDI=mean(Humandevelopmentindex),
+              medianHDI=median(Humandevelopmentindex))
+```
+
+* The median of the democracy components:
+
+```{r}
+# several columns in cbind...
+aggregate(data=fromPy,
+          cbind(Electoralprocessandpluralism,Functioningofgovernment,
+                Politicalparticipation,Politicalculture,
+                Civilliberties)~Continent,
+          FUN=median)
+
+```
+
+If you know the indexes of the columns:
+
+```{r}
+# In ".~ Continent" the dot represents all the other variables
+aggregate(data=fromPy[,c(8:12,14)],.~Continent,FUN=median)
+```
+
+A version using **pipes** and **dplyr**:
+
+```{r}
+fromPy[,c(8:12,14)]%>%
+    group_by(Continent) %>% 
+    summarise_all(list(median)) 
+```
+
+A more complex version:
+
+```{r}
+fromPy[,c(8:12,14)]%>%
+    group_by(Continent) %>% 
+    summarise_all(list(MIN=min,MAX=max)) 
+```
+
+## Creating new data:
+
+One column:
+
+```{r}
+# HDIdico is the new variable:
+# 1 if the value is < median, ) otherwise.
+fromPy$HDIdico=ifelse(fromPy$Humandevelopmentindex>
+                          median(fromPy$Humandevelopmentindex),
+                      1,0)
+# then:
+head(fromPy)
+```
+
+A version using **pipes** and **dplyr**:
+
+```{r}
+# you will add a new column at the end (this is a preview):
+fromPy%>%
+    mutate(HDIdico =ifelse(Humandevelopmentindex >
+                           median(Humandevelopmentindex),
+                           1, 0))%>%head()
+```
+
+
+# <font color="red">Unsupervised ML: Clustering Techniques</font> 
+
+In supervised techniques, the computer finds the patterns on its own, as the data does not contain an example for the algorithms. Let's explore three types of clustering approaches.
+
+1. Partitioning: You will request a particular number of clusters to the algorithm. The algorithm will put every case in one of those clusters. Outliers will affect output.
+
+![Source: https://en.wikipedia.org/wiki/Cluster_analysis](https://upload.wikimedia.org/wikipedia/commons/c/c8/Cluster-2.svg)
+
+2. Hierarchizing: You will ask the algorithm to find all possible ways cases can be clustered, individually and in subgroups following a tree-construction/deconstruction approach. You should determine the right amount of clusters.Outliers will affect output.
+
+![Source: https://quantdare.com/hierarchical-clustering/](https://quantdare.com/wp-content/uploads/2016/06/AggloDivHierarClustering-800x389.png)
+
+3. Based on Density
+
+This approach will cluster cases as long as they are close to each other at a predetermined distance. You need to input the distance and the minimal amount of cases in a neighboorhood to be considered a cluster. The algorithm is not affected by outliers.
+
+![https://commons.wikimedia.org/wiki/Cluster_analysis](https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/DBSCAN-Gaussian-data.svg/600px-DBSCAN-Gaussian-data.svg.png)
+
+_____
+
+## Preparing data:
+
+For all cases, you need the DISTANCE MATRIX:
+
+**a.** Subset the data frame:
+
+```{r}
+dfClus=fromPy[,c(2,13,16)]
+```
+
+
+**b.** Rename subset indexes and Verify what your input
+```{r}
+row.names(dfClus)=fromPy$Country
+head(dfClus)
+```
+
+
+
+**c.** Set random seed:
+```{r}
+set.seed(999)
+```
+
+
+**d.** Decide distance method and compute distance matrix:
+```{r}
+library(cluster)
+dfClus_D=cluster::daisy(x=dfClus,metric="gower")
+```
+
+
+## Partitioning technique
+
+### 1. Apply function: you need to indicate the amount of clusters required.
+
+```{r}
+NumCluster=4
+res.pam = pam(x=dfClus_D,k = NumCluster,cluster.only = F)
+```
+
+
+### 2. Save clustering results. 
+
+```{r}
+fromPy$pam=as.factor(res.pam$clustering)
+```
+
+You can see who the members are:
+
+```{r}
+fromPy[fromPy$pam==1,'Country']
+```
+
+You can request belonging:
+
+```{r}
+fromPy[fromPy$Country=="Peru",'pam']
+```
+
+
+### 3. Evaluate Results.
+
+**3.a** Global and visual report
+
+```{r}
+library(factoextra)
+fviz_silhouette(res.pam)
+```
+
+**3.b** Individual report
+
+```{r}
+pamEval=data.frame(res.pam$silinfo$widths)
+head(pamEval)
+```
+
+**3.c** Detecting anomalies
+
+```{r}
+pamEval[pamEval$sil_width<0,]
+```
+
+
+## Hierarchizing: agglomerative
+
+### 1. Apply function: you need to indicate the amount of clusters required.
+
+```{r}
+library(factoextra)
+
+res.agnes= hcut(dfClus_D, k = NumCluster,isdiss=T,
+                 hc_func='agnes',
+                 hc_method = "ward.D2")
+```
+
+
+### 2. Save clustering results. 
+
+```{r}
+fromPy$agn=as.factor(res.agnes$cluster)
+```
+
+You can see who the members are:
+
+```{r}
+fromPy[fromPy$agn==1,'Country']
+```
+
+You can request belonging:
+
+```{r}
+fromPy[fromPy$Country=="Peru",'agn']
+```
+
+
+### 3. Evaluate Results.
+
+**3.a** Global and visual report
+
+
+```{r}
+fviz_dend(res.agnes,k=NumCluster, cex = 0.7, horiz = T)
+```
+
+```{r}
+library(factoextra)
+fviz_silhouette(res.agnes)
+```
+
+**3.b** Individual report
+
+```{r}
+agnEval=data.frame(res.agnes$silinfo$widths)
+head(agnEval)
+```
+
+**3.c** Detecting anomalies
+
+```{r}
+agnEval[agnEval$sil_width<0,]
+```
+
+
+## Hierarchizing: divisive
+
+### 1. Apply function: you need to indicate the amount of clusters required.
+
+```{r}
+library(factoextra)
+
+res.diana= hcut(dfClus_D, k = NumCluster,
+                 hc_func='diana',
+                 hc_method = "ward.D")
+```
+
+
+## Exercise 14
+
+Adapt the code from the **agglomerative** technique to the complete the **divisive** code. Save the resulting cluster in _fromPy_ data frame as **div**.
+
+
+## Density-based clustering
+
+You input the distance and the minimal number of neighbors that form a cluster.
+```{r}
+library(dbscan)
+#minNeighs> num cols in data
+minNeighs=4
+kNNdistplot(dfClus_D, k = minNeighs)
+abline(h=.03, col = "red", lty=2)
+```
+
+
+```{r}
+library(fpc)
+distance=0.03
+res.db = fpc::dbscan(dfClus_D, eps=distance, 
+                     MinPts=minNeighs,
+                     method = 'dist')
+```
+
+How many cluster were produced? and How many outliers are there?
+
+```{r}
+# '0' identifies outliers: 
+res.db
+```
+
+Save result:
+
+```{r}
+fromPy$db=as.factor(res.db$cluster)
+```
+
+
+# How to compare clustering?
+
+* Prepare a bidimensional map:
+
+```{r}
+projectedData = cmdscale(dfClus_D, k=2)
+fromPy$dim1 = projectedData[,1]
+fromPy$dim2 = projectedData[,2]
+```
+
+
+* See the "map":
+
+```{r}
+base= ggplot(data=fromPy,
+             aes(x=dim1, y=dim2,
+                 label=Country)) 
+base + geom_text(size=2)
+```
+
+* Plot results from PAM:
+```{r}
+pam=base + labs(title = "PAM") + geom_point(size=2,
+                                              aes(color=pam),
+                                              show.legend = F)  
+```
+
+* Plot results from Hierarchical AGNES:
+```{r}
+agn=base + labs(title = "AGNES") + geom_point(size=2,
+                                              aes(color=agn),
+                                              show.legend = F) 
+```
+
+Compare visually:
+
+```{r}
+library(ggpubr)
+ggarrange(pam, agn)
+```
+
+* Plot results from DBSCAN:
+```{r}
+db= base + labs(title = "DBSCAN") + geom_point(aes(color=db),
+                                               show.legend = T) 
+db
+```
+
+Annotating:
+
+```{r}
+library(ggrepel)
+db + geom_text_repel(size=3,aes(label=Country))
+```
+
+Annotating outliers:
+
+```{r}
+LABEL=ifelse(fromPy$db==0,fromPy$Country,"")
+
+db + geom_text_repel(aes(label=LABEL))
+```
+
+
+
+
+
+
+
+

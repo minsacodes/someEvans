@@ -1,0 +1,195 @@
+---
+title: "Session 1"
+output: learnr::tutorial
+runtime: shiny_prerendered
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+
+
+## What data do I have? 
+
+This is how you need categorical data before plotting
+
+```{r dataCreation1, exercise=TRUE}
+inventedDF <- data.frame(schoolType=c("Public", "Private", "Other"),
+                         Count=c(200, 20, 80))
+inventedDF
+
+```
+
+
+## Prepating ggplot2
+
+Nothing, apparently, happens:
+
+```{r baseGGplot, exercise=TRUE}
+inventedDF <- data.frame(schoolType=c("Public", "Private", "Other"),
+                         Count=c(200, 20, 80))
+
+library(ggplot2)
+
+base=ggplot(data=inventedDF, # name of data frame
+            aes(x=schoolType,# variables to use in each object
+                y=Count))
+```
+
+## Default plot
+
+```{r barsdefault, exercise=TRUE}
+inventedDF <- data.frame(schoolType=c("Public", "Private", "Other"),
+                         Count=c(200, 20, 80))
+
+library(ggplot2)
+
+base=ggplot(data=inventedDF,aes(x=schoolType,y=Count))
+base + geom_bar(stat = 'identity') # object BAR plots "y", as is.
+```
+
+## Default plus Title
+
+```{r barsTitle, exercise=TRUE}
+inventedDF <- data.frame(schoolType=c("Public", "Private", "Other"),
+                         Count=c(200, 20, 80))
+#
+# all text for titles
+Titles=list(Ti="Nice title",STi="sub is here",XTi="Type of school",YTi="Amount of schools",Sou="Source: imaginary")
+#
+library(ggplot2)
+base=ggplot(data=inventedDF,aes(x=schoolType,y=Count))
+bar1= base + geom_bar(stat = 'identity')
+#
+# using texts
+bar1 + labs(title = Titles$Ti,subtitle = Titles$STi,
+            xlab=Titles$XTi,ylab=Titles$YTi,
+            caption = Titles$Sou)
+```
+
+## Default plus annotating
+
+```{r barsAnnot, exercise=TRUE}
+inventedDF=data.frame(schoolType=c("Public", "Private", "Other"),Count=c(200, 20,80))
+Titles=list(Ti="Nice title",STi="sub is here",XTi="Type of school",YTi="Amount of schools",Sou="Source: imaginary")
+#
+#texts for annotation
+annots=list(forBar="HELLO")
+#
+library(ggplot2)
+base=ggplot(data=inventedDF,aes(x=schoolType,y=Count)) 
+bar1= base + geom_bar(stat = 'identity')
+bar1=bar1 + labs(title = Titles$Ti,subtitle = Titles$STi,
+                 xlab=Titles$XTi,ylab=Titles$YTi,
+                 caption = Titles$Sou)
+#
+#annotating
+bar1 + annotate(geom = 'text',x = 2,y=30,label=annots$forBar)
+```
+
+## Default changes: background
+
+```{r barsBackground, exercise=TRUE}
+inventedDF=data.frame(schoolType=c("Public", "Private", "Other"),Count=c(200, 20,80))
+Titles=list(Ti="Nice title",STi="sub is here",XTi="Type of school",YTi="Amount of schools",Sou="Source: imaginary")
+annots=list(forBar="HELLO")
+
+library(ggplot2)
+base= ggplot(data=inventedDF,aes(x=schoolType,y=Count)) 
+#
+# background
+base= base + theme_classic()
+#
+bar1= base + geom_bar(stat = 'identity')
+bar1= bar1 + labs(title = Titles$Ti,subtitle = Titles$STi,
+                  xlab=Titles$XTi,ylab=Titles$YTi,
+                  caption = Titles$Sou)
+bar1 + annotate(geom = 'text',x = 2,y=30,label=annots$forBar)
+```
+
+## Default changes: position
+
+```{r barsPosition, exercise=TRUE}
+inventedDF=data.frame(schoolType=c("Public", "Private", "Other"),Count=c(200, 20,80))
+Titles=list(Ti="Nice title",STi="sub is here",XTi="Type of school",YTi="Amount of schools",Sou="Source: imaginary")
+annots=list(forBar="HELLO")
+#
+# label position on horizontal
+NEWorder=c('Private','Other','Public')
+#
+library(ggplot2)
+base= ggplot(data=inventedDF,aes(x=schoolType,y=Count)) 
+base= base + theme_classic()
+
+bar1= base + geom_bar(stat = 'identity')
+bar1= bar1 + labs(title = Titles$Ti,subtitle = Titles$STi,
+                  xlab=Titles$XTi,ylab=Titles$YTi,
+                  caption = Titles$Sou)
+# new position for annotation
+bar1= bar1 + annotate(geom = 'text',x = 1,y=30,label=annots$forBar)
+#
+# repositioning bars
+bar1 + scale_x_discrete(limits=NEWorder)
+```
+
+## Default changes: titles alignment
+
+```{r barsChangeTit, exercise=TRUE}
+inventedDF=data.frame(schoolType=c("Public", "Private", "Other"),Count=c(200, 20,80))
+Titles=list(Ti="Nice title",STi="sub is here",XTi="Type of school",YTi="Amount of schools",Sou="Source: imaginary")
+annots=list(forBar="HELLO")
+NEWorder=c('Private','Other','Public')
+
+library(ggplot2)
+base= ggplot(data=inventedDF,aes(x=schoolType,y=Count)) 
+base= base + theme_classic()
+bar1= base + geom_bar(stat = 'identity')
+bar1= bar1 + labs(title = Titles$Ti,subtitle = Titles$STi,
+                  xlab=Titles$XTi,ylab=Titles$YTi,
+                  caption = Titles$Sou)
+bar1= bar1 + annotate(geom = 'text',x = 1,y=30,label=annots$forBar)
+bar1= bar1 + scale_x_discrete(limits=NEWorder)
+# realignment of texts in titles
+bar1 + theme(plot.title= element_text(hjust= 0.5),
+             plot.subtitle= element_text(hjust= 0.5),
+             plot.caption= element_text(hjust= 0))
+
+```
+
+## Default changes: color and legend
+
+Run the code, then:
+
+* Add in theme: **legend.position='top'**
+* Add in scale_fill_brewer: **breaks=NEWorder**
+* Make a change in guides: **guides(fill = "none")**
+
+```{r barsChangeLegCol, exercise=TRUE}
+inventedDF=data.frame(schoolType=c("Public", "Private", "Other"),Count=c(200, 20,80))
+Titles=list(Ti="Nice title",STi="sub is here",XTi="Type of school",YTi="Amount of schools",Sou="Source: imaginary")
+annots=list(forBar="HELLO")
+NEWorder=c('Private','Other','Public')
+
+library(ggplot2)
+base= ggplot(data=inventedDF,aes(x=schoolType,y=Count)) 
+base= base + theme_classic()
+#
+# Adding variable for coloring
+bar1= base + geom_bar(stat = 'identity', aes(fill=schoolType)) 
+#
+bar1= bar1 + labs(title = Titles$Ti,subtitle = Titles$STi,
+                  xlab=Titles$XTi,ylab=Titles$YTi,
+                  caption = Titles$Sou)
+bar1= bar1 + annotate(geom = 'text',x = 1,y=30,label=annots$forBar)
+bar1= bar1 + scale_x_discrete(limits=NEWorder)
+bar1= bar1 + theme(plot.title= element_text(hjust= 0.5),
+                   plot.subtitle= element_text(hjust= 0.5),
+                   plot.caption= element_text(hjust= 0))
+#
+# color and legend changes
+bar1 + scale_fill_brewer(palette = "Accent") + guides(fill = "legend")
+
+```

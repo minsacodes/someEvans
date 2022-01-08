@@ -1,0 +1,380 @@
+<br> 
+<center><img src="http://i.imgur.com/sSaOozN.png" width="500"></center>
+
+
+## Course:  COMPUTATIONAL THINKING FOR GOVERNANCE ANALYTICS
+
+### Prof. José Manuel Magallanes, PhD 
+* Visiting Professor of Computational Policy at Evans School of Public Policy and Governance, and eScience Institute Senior Data Science Fellow, University of Washington.
+* Professor of Government and Political Methodology, Pontificia Universidad Católica del Perú. 
+
+
+_____
+<a id='part1'></a>
+
+# Session 6: Intro to R (III)
+
+
+Collect the data we prepared in Python:
+
+```{r, eval=TRUE}
+link='https://github.com/EvansUW-GovAnalytics-Project/students_merge/raw/main/demohdikw.RDS'
+# a RDS file from the web needs:
+myFile=url(link)
+
+# reading in data:
+fromPy=readRDS(file = myFile)
+
+# reset indexes to R format:
+row.names(fromPy)=NULL
+```
+
+Verifying data structure:
+
+```{r, eval=TRUE}
+str(fromPy,width = 70,strict.width='cut')
+```
+
+
+
+
+# <font color="red">R for Regression</font>
+
+## Continuous outcome 
+
+Generally speaking, we use regression when we have a continuous outcome o dependent variable, and a set of independent variables of different type. 
+
+### * __EXPLANATORY APPROACH__
+
+1. State hypotheses:
+
+Prepare your hypotheses:
+```{r, eval=TRUE}
+# hypothesis 1: HDI increases as Democracy advances:
+hypo1=formula(HDI~ Score)
+
+# hypothesis 2: HDI increases as Democracy and Industrialization advance:
+
+hypo2=formula(HDI~ Score + kWh_pop)
+```
+
+
+2. Compute regression models:
+
+```{r, eval=TRUE}
+#
+# results
+gauss1=glm(hypo1,
+           data = fromPy,
+           family = 'gaussian')
+
+gauss2=glm(hypo2,
+           data = fromPy,
+           family = 'gaussian')
+```
+
+3. See results:
+
+* First Hypothesis
+
+```{r, eval=TRUE}
+summary(gauss1)
+```
+
+* Second Hypothesis
+```{r, eval=TRUE}
+summary(gauss2)
+```
+
+4. Search for _better_ model:
+
+```{r, eval=TRUE}
+anova(gauss1,gauss2,test="Chisq")
+```
+
+Model for the first hypothesis is chosen. You can get the RSquared if needed:
+
+```{r, eval=TRUE}
+library(rsq)
+rsq(gauss2,adj=T)
+```
+
+5. Verify the situation of chosen model:
+
+5.1. Linearity between dependent variable and predictors is assumed, then these dots should follow a linear and horizontal trend:
+```{r, eval=TRUE}
+plot(gauss2,1)
+```
+The linear relationship holds, but it is worth evaluating the outliers.
+
+5.2. Normality of residuals is assumed:
+
+Visual exploration:
+```{r, eval=TRUE}
+plot(gauss2,2)
+```
+
+Mathematical exploration:
+```{r, eval=TRUE}
+# The data is normal if the p-value is above 0.05
+shapiro.test(gauss2$residuals)
+```
+
+5.3. Homoscedasticity is assumed, so you need to check if residuals are spread equally along the ranges of predictors:
+
+Visual exploration:
+
+```{r, eval=TRUE}
+plot(gauss2, 3)
+```
+
+Mathematical exploration:
+```{r, eval=TRUE}
+library(lmtest)
+#pvalue<0.05 you cannot assume Homoscedasticity
+bptest(gauss2) 
+```
+
+5.4. We assume that there is no colinearity, that is, that the predictors are not correlated.
+
+
+```{r, eval=TRUE}
+library(car)
+vif(gauss2) # lower than 5 is desirable
+```
+
+5.5. Analize the effect of atypical values. Determine if outliers (points that are far from the rest, but still in the trend) or high-leverage points (far from the trend but close to the rest) are influential:
+
+Visual exploration:
+```{r, eval=TRUE}
+plot(gauss2,5)
+```
+
+Querying:
+```{r, eval=TRUE}
+gaussInf=as.data.frame(influence.measures(gauss2)$is.inf)
+gaussInf[gaussInf$cook.d,]
+```
+
+
+6. Finally, a nice summary plot of your work:
+
+```{r, eval=TRUE}
+library(sjPlot)
+
+plot_models(gauss2,vline.color = "grey")
+```
+
+
+* __PREDICTIVE APPROACH__
+
+
+1. Split the data set:
+
+```{r, eval=TRUE}
+library(caret)
+
+set.seed(123)
+
+selection = createDataPartition(fromPy$HDI,
+                                p = 0.75,
+                                list = FALSE)
+#
+trainGauss = fromPy[ selection, ]
+#
+testGauss  = fromPy[-selection, ]
+```
+
+2. Regress with train data
+
+Let's use cross validation, applying the regression to five samples from the training data set:
+```{r, eval=TRUE}
+ctrl = trainControl(method = 'cv',number = 5)
+
+gauss2CV = train(hypo2,
+                 data = trainGauss, 
+                 method = 'glm',
+                 trControl = ctrl)
+
+summary(gauss2CV)
+```
+
+3. Evaluate performance
+
+
+```{r, eval=TRUE}
+
+predictedVal<-predict(gauss2CV,testGauss)
+
+postResample(obs = testGauss$HDI,
+             pred=predictedVal)
+```
+
+
+## Binary outcome 
+
+In this situation you have binary dependent variable, which we do not currently have:
+
+```{r}
+fromPy$HDIdico=ifelse(fromPy$HDI>median(fromPy$HDI,
+                                       na.rm = T),
+                     1,0)
+```
+
+Now we have it. 
+
+### * __EXPLANATORY APPROACH__
+
+1. State hypothesis:
+
+Let's use the same ones:
+
+```{r, eval=TRUE}
+hypoDico1=formula(HDIdico~ Score)
+hypoDico2=formula(HDIdico~ Score + kWh_pop)
+```
+
+2. Reformat
+
+```{r, eval=TRUE}
+fromPy$HDIdico=factor(fromPy$HDIdico)
+```
+
+
+6. Compute regression models:
+
+```{r, eval=TRUE}
+Logi1=glm(hypoDico1,data = fromPy,
+          family = "binomial")
+Logi2=glm(hypoDico2,data = fromPy,
+          family = "binomial")
+```
+
+7. See results:
+
+* First Hypothesis:
+```{r, eval=TRUE}
+summary(Logi1)
+```
+* Second Hypothesis:
+
+```{r, eval=TRUE}
+summary(Logi2)
+```
+
+8. Search for better model:
+```{r, eval=TRUE}
+lrtest(Logi1,Logi2)
+```
+
+Model for the second hypothesis is chosen.
+
+9. Verify the situation of chosen model
+
+9.1. Linearity assumption (Box-Tidwell test)
+
+```{r, eval=TRUE}
+DataRegLogis=fromPy
+DataRegLogis$demoTEST=fromPy$Score*log(fromPy$Score)
+DataRegLogis$kWhTEST=fromPy$kWh_pop*log(fromPy$kWh_pop)
+
+DicoTest=formula(HDIdico~ Score + kWh_pop + demoTEST + kWhTEST)
+
+summary(glm(DicoTest,data=DataRegLogis,family = binomial))
+
+```
+
+9.2. We assume that there is no colinearity, that is, that the predictors are not correlated.
+
+```{r, eval=TRUE}
+vif(Logi2)
+```
+
+9.3 Analize the effect of atypical values. Determine if outliers (points that are far from the rest, but still in the trend) or high-leverage points (far from the trend but close to the rest) are influential:
+
+Visual exploration:
+
+```{r, eval=TRUE}
+plot(Logi2,5)
+```
+
+10. Finally, a nice summary plot of your work by computing the marginal effects:
+
+```{r, eval=TRUE}
+library(margins)
+(modelChosen = margins(Logi2))
+```
+
+```{r, eval=TRUE}
+(margins=summary(modelChosen))
+```
+
+
+```{r, eval=TRUE}
+
+base= ggplot(margins,aes(x=factor, y=AME)) + geom_point()
+plot2 = base + theme(axis.text.x = element_text(angle = 80,
+                                              size = 6,
+                                              hjust = 1))
+plot2    
+```
+```{r, eval=TRUE}
+plot2 +  geom_errorbar(aes(ymin=lower, ymax=upper))
+```
+
+### * __PREDICTIVE APPROACH__
+
+
+1. Split the data set:
+```{r, eval=TRUE}
+set.seed(123)
+
+selection = createDataPartition(DataRegLogis$HDIdico,
+                                p = 0.75,
+                                list = FALSE)
+trainLogi = DataRegLogis[selection, ]
+testLogi  = DataRegLogis[-selection, ]
+```
+
+2. Regress with train data
+
+Let’s use cross validation, applying the regression to five samples from the training data set:
+```{r, eval=TRUE}
+set.seed(123)
+ctrl = trainControl(method = 'cv',number = 5)
+
+Logis2CV = train(hypoDico2,
+                 data = trainLogi, 
+                 method = 'glm',
+                 family="binomial",
+                 trControl = ctrl)
+```
+
+3. See results:
+
+```{r, eval=TRUE}
+summary(Logis2CV)
+```
+
+3. Evaluate performance
+
+3.1 Get predictions on test data
+```{r, eval=TRUE}
+
+predictions = predict(Logis2CV,
+                      newdata=testLogi,
+                      type='raw')
+```
+
+3.2 Assess performance 
+```{r, eval=TRUE}
+confusionMatrix(data=predictions,
+                reference=testLogi$HDIdico,
+                positive = "1")
+```
+
+Here is some help for you to interpret the result: 
+
+<iframe src="https://docs.google.com/presentation/d/e/2PACX-1vRyFvA5U2HXC3CGBeKEr209_KLjjdeo8FoKT6BxMsjLNOJwx7YDUmGEpDq1pzfGO7Zizuk5rogUNPgj/embed?start=false&loop=false&delayms=3000" frameborder="0" width="960" height="569" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
+
+

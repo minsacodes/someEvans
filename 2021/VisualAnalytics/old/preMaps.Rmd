@@ -1,0 +1,20 @@
+```{r, eval=FALSE, results='hide', warning=FALSE,message=FALSE}
+# notice the parameters use in the chunk!!
+
+library(rgdal)
+wazipMap <- readOGR("SAEP_ZIP_Code_Tabulation_Areas.shp",stringsAsFactors=F) 
+```
+
+```{r}
+library(geojsonio)
+
+wazipMapGeo=geojson_json(wazipMap, geometry = "polygon", pretty=TRUE,convert_wgs84=T)
+```
+```{r}
+library(rmapshaper)
+wazipMapGeo_simplified <- ms_simplify(wazipMapGeo)
+```
+```{r}
+plot(wazipMapGeo)
+```
+

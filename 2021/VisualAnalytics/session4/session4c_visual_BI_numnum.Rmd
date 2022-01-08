@@ -1,0 +1,398 @@
+<br> 
+<center><img src="http://i.imgur.com/sSaOozN.png" width="500"></center>
+
+
+## Course: VISUAL ANALYTICS FOR POLICY AND MANAGEMENT
+
+### Prof. José Manuel Magallanes, PhD 
+* Visiting Professor of Computational Policy at Evans School of Public Policy and Governance, and eScience Institute Senior Data Science Fellow, University of Washington.
+* Professor of Government and Political Methodology, Pontificia Universidad Católica del Perú. 
+
+
+_____
+
+
+# Session 4- part C: 
+# Tabular data - Bivariate relationships: Numerical-Numerical
+
+
+As always we collect...
+
+```{r collect, eval=TRUE}
+# collecting the data
+link="https://github.com/EvansDataScience/data/raw/master/crime.RData"
+load(file = url(link))
+```
+
+...and review the data:
+
+```{r, eval=TRUE}
+str(crime)
+```
+
+Let's use:
+
+* "Occurred.Date"              
+* "year"
+* "month"                      
+* "weekday" 
+* "Reported.Date"              
+* "DaysToReport"               
+* "crimecat"                    
+* "Neighborhood"   
+
+```{r, eval=TRUE}
+varsProject=c("Occurred.Date","year", "month", "weekday", "Reported.Date" , "DaysToReport","crimecat","Neighborhood")
+crime=crime[,varsProject]
+crime=crime[complete.cases(crime),]
+row.names(crime)=NULL
+```
+
+## Numeric-Time data
+
+Time belongs to the interval scale. The zero does not mean absence of time, and the multiplicative interpretations do not make sense: 4 pm is not twice 2 pm. 
+
+I have a date variable in this data set:
+```{r, eval=TRUE}
+summary(crime$Occurred.Date)
+```
+
+
+
+
+This time, I will change the information for the *DUI* from 1908, and modified other cells as needed. First let me find out the location of that row:
+
+```{r, eval=TRUE}
+crime[which.min(crime$Occurred.Date),]
+```
+Then,
+
+```{r, eval=TRUE}
+# change Date (keep format):
+crime[6739,'Occurred.Date']=as.Date('2008-12-13')
+# change column year:
+crime[6739,'year']=2008
+```
+
+The previous changes were easy, but I need to make changes in computed fields:
+```{r, eval=TRUE}
+#for recomputing fields:
+library(lubridate)
+library(magrittr) # to use "%>%"
+
+#change the DAY of the week
+crime[6739,'weekday']=wday(as.Date('2008-12-13'), 
+                           label=TRUE,
+                           abbr = FALSE)
+
+#change the period:
+
+crime[6739,'DaysToReport']=difftime(crime[6739,'Reported.Date'],
+                                    crime[6739,'Occurred.Date'],
+                                    units = "days")%>%as.numeric()
+```
+
+
+With the data as is, you can request a bar plot:
+
+```{r, eval=TRUE}
+# how many crimes are occurring per day since...?
+library(ggplot2)
+base=ggplot(crime,aes(x = floor_date(Occurred.Date, "day")))
+barT1= base + geom_bar() 
+barT1
+```
+
+A particular period:
+```{r, eval=TRUE}
+Start=as.Date('2010-1-1')
+End=as.Date('2010-12-31')
+barT1 + scale_x_date(limits = c(Start,End)) 
+```
+
+A particular crime
+
+```{r, eval=TRUE}
+# A particular crime: theft
+
+base=ggplot(crime[crime$crimecat=="THEFT",],
+            aes(x = floor_date(Occurred.Date, "day")))
+barT2=base + geom_bar() 
+barT2 + scale_x_date(limits = c(Start,End))
+
+```
+
+I could make a better horizontal axis:
+
+```{r, eval=TRUE}
+library(scales) #for "date_format"
+# x axis formatting
+barT2 + scale_x_date(limits = c(Start,End),
+                    labels = date_format("%b"),
+                    date_breaks = "1 month") 
+```
+
+We can use facets:
+
+```{r, eval=TRUE}
+# filtering and faceting
+base=ggplot(data=crime[crime$year>2014,], # filter
+            aes(x=Occurred.Date))
+barT3=base + geom_bar(na.rm = T) 
+barT3 + facet_wrap(~crimecat)
+```
+
+We could re organize the previous plot but we lack some information. Let me create a frequency table:
+```{r, eval=TRUE}
+crimeDate=as.data.frame(table(crime$Occurred.Date,crime$crimecat))
+names(crimeDate)=c("date",'crime','count')
+#formatting column in Freq Table:
+crimeDate$date=as.Date(crimeDate$date)
+#you have
+head(crimeDate,15)
+```
+
+```{r, eval=TRUE}
+base=ggplot(crimeDate[crimeDate$date>'2014-12-31',], # filter
+            aes(x=date,y=count))
+barT4=base + geom_bar(stat = 'identity') 
+barT4 + facet_wrap(~reorder(crime,-count))
+```
+
+It is pretty common the use of lines. Let me prepare a line plot for all the data:
+
+```{r, eval=TRUE}
+crimeDate2=as.data.frame(table(crime$Occurred.Date))
+names(crimeDate2)=c("date",'count')
+#formatting column in Freq Table:
+crimeDate2$date=as.Date(crimeDate2$date)
+```
+
+```{r, eval=TRUE}
+base=ggplot(crimeDate2,
+            aes(x=date,y=count))
+base  + geom_line(alpha=0.3) 
+```
+
+Now for a subset:
+
+```{r, eval=TRUE}
+
+base=ggplot(crimeDate2[crimeDate2$date>as.Date("2010/1/1"),],
+            aes(x=floor_date(date, "week"),y=count))
+base  + geom_line(alpha=0.3) 
+```
+
+The same, but changing limits of x-axis instead of subsetting:
+```{r, eval=TRUE}
+min <- as.Date("2010/1/1")
+max <- NA
+base=ggplot(crimeDate2,
+            aes(x=date,y=count))
+base  + geom_line(alpha=0.3) + scale_x_date(limits = c(min, max)) 
+```
+
+Counting per month:
+
+```{r, eval=TRUE}
+min <- as.Date("2010/1/1")
+max <- NA
+base=ggplot(crimeDate2,
+            aes(x=floor_date(date, "month"),
+                y=count))
+monthly= base  + geom_line(alpha=0.3) 
+monthly= monthly + scale_x_date(limits = c(min, max))
+
+# adding a trend:
+monthly + stat_smooth(color = "red",
+                      fill = "yellow",
+                      method = "loess")
+```
+Let me add column with year to the frequency table *crimeDate2*:
+
+```{r, eval=TRUE}
+crimeDate2$year=year(crimeDate2$date)
+#you have
+head(crimeDate2,15)
+```
+
+The line plot informs of the trend, but a histogram or density plot inform of the distribution (skewness, kurtosis, spread):
+
+```{r, eval=TRUE}
+base = ggplot(crimeDate2[crimeDate2$year>2010,],
+       aes(x = count)) + theme_classic()
+densePlot=base + geom_density(fill='grey', color=NA) 
+densePlot=densePlot+ facet_wrap(~year,
+                                ncol = 1, #all in one column
+                                strip.position = 'right')#,#year
+densePlot 
+
+```
+
+You can improve this with:
+
+```{r, eval=TRUE}
+densePlot + 
+        # reduce space between density plot
+  theme(panel.spacing.y = unit(0.1, "lines"),
+        # no title on y
+        axis.title.y = element_blank(),
+        # no text on y
+        axis.text.y = element_blank(),
+        # no line on y
+        axis.line.y = element_blank(),
+        # no ticks on y
+        axis.ticks.y = element_blank(),
+        # the border and background of each year in facet:
+        strip.background = element_rect(colour="white"),
+        # the text of each year in facet
+        strip.text.y = element_text(size=12,
+                                    color="grey",
+                                    angle = 0))
+```
+
+We can use similar plots to the ones used in the previous material (cat-num). Let's keep duration longer than a year, and after 2000
+
+```{r filterexploreBOX2, eval=TRUE}
+# new filtered data frame
+crimeY2000=crime[crime$year>=2000 & crime$DaysToReport>=365,]
+
+# create new variable in YEARS:
+crimeY2000$YearsToReport=crimeY2000$DaysToReport/365
+```
+
+```{r, eval=TRUE}
+#boxplot by Year
+base=ggplot(data = crimeY2000,
+            aes(x=as.factor(year),
+                y=YearsToReport))
+boxByYear=base + geom_boxplot()
+
+boxByYear
+```
+
+
+Remember that although the boxplot is very informative, you could only show familiar  statistics :
+
+
+```{r, eval=TRUE}
+# vector of colors named as stats:
+myFunCols=c(Max='black',Min='blue',Median='purple')
+
+# plotting
+baseINV=ggplot(crimeY2000, aes(x=as.factor(year),
+                             y=YearsToReport)) +
+        theme_classic()
+# points with AESthetics:
+MINs=baseINV + geom_point(stat="summary",fun='max',
+                          aes(color="Max")) 
+MAXMINs=MINs + geom_point(stat="summary",fun='min',
+                          aes(color="Min")) 
+MxMnMDs=MAXMINs+ geom_point(stat="summary",fun='median',
+                            aes(color="Median")) 
+MxMnMDs= MxMnMDs + scale_colour_manual(values=myFunCols,
+                                       name="Stats") 
+MxMnMDs
+```
+
+Connecting the dots (using **group** in **aes**), as we also did last session:
+
+```{r, eval=TRUE}
+MxMnMDsL=MxMnMDs+ geom_line(stat="summary",fun='max',
+                            aes(group=1,color="Max"))
+MxMnMDsL=MxMnMDsL+ geom_line(stat="summary",fun='min',
+                            aes(group=1,color="Min"))
+MxMnMDsL=MxMnMDsL+ geom_line(stat="summary",fun='median',
+                            aes(group=1,color="Median")) # changing text angle
+MxMnMDsL + theme(axis.text.x = element_text(angle = 60,
+                                            vjust = 0.5
+                                            ))
+```
+
+## Numeric-Numeric data
+
+The study of bivariate relationships among numerical variables is known as correlation analysis. The data we have been using has few numerical columns, but I will produce two by aggregating the original data since 2015 by _Neigborhood_:
+
+* Aggregating days to report and neighborhood:
+```{r aggregate, eval=TRUE}
+crime2015=crime[crime$year>=2015,]
+# 1. MEAN of days it takes to report a crime by neighborhood
+daysByNeigh=aggregate(data=crime2015,DaysToReport~Neighborhood,mean)
+
+# you have:
+head(daysByNeigh)
+```
+
+* Aggregating crimes by neighborhood
+```{r, eval=TRUE}
+# 2. Crimes by neighborhood
+crimesByNeigh=as.data.frame(100*prop.table(table(crime2015$Neighborhood)))
+names(crimesByNeigh)=c('Neighborhood', 'CrimeShare')
+head(crimesByNeigh)
+```
+
+
+Since both data frames have the same neighboorhood, we can make one data frame by merging them:
+
+```{r mergeDFS, eval=TRUE}
+num_num=merge(daysByNeigh,crimesByNeigh) # 'Neighborhood' is the "key"
+#check after merge:
+str(num_num)
+```
+```{r, eval=TRUE}
+num_num$Neighborhood=as.character(num_num$Neighborhood)
+```
+
+
+Once we have the data organized, the clear option is the scatterplot:
+
+```{r scatter, eval=TRUE}
+ 
+base = ggplot(num_num, aes(x=DaysToReport,y=CrimeShare)) 
+plot1= base +  geom_point() 
+plot1
+```
+
+We can improve the plot, this time introducing **ggrepel**:
+
+```{r ggscatter, eval=TRUE}
+library(ggrepel)
+plot1 + geom_text_repel(aes(label=Neighborhood),size=3)
+```
+
+We can limit the labels, annotating the ones that represent at least 5% of the crimes in the city:
+
+```{r, eval=TRUE}
+plot1 + geom_text_repel(aes(label=ifelse(CrimeShare>=5 | DaysToReport>10,
+                                         Neighborhood, "")))
+```
+
+
+
+An alternative, to highlight overlaping of points:
+```{r hexbins, eval=TRUE}
+scatp1 = base +  geom_hex(bins = 10)
+scatp2= scatp1 + geom_text_repel(aes(label=ifelse(CrimeShare>=5 | DaysToReport>10, Neighborhood, "")))
+scatp2 + scale_fill_distiller(palette ="Greys",direction=1) # try -1
+```
+
+The palettes can be selected from the [brewer colors website](http://colorbrewer2.org). Using the same palette as before, we can try a different plot (stat_density_2d):
+
+```{r density,eval=TRUE}
+base = ggplot(num_num, aes(x=DaysToReport,y=CrimeShare)) 
+scatp1 = base +  stat_density_2d(aes(fill = ..density..), 
+                                 geom = "raster", contour = FALSE)
+scatp2=scatp1 + geom_text_repel(aes(label=ifelse(CrimeShare>=5 | DaysToReport>10,
+                                         Neighborhood, "")))
+scatp3 = scatp2 +  theme(legend.position='none') 
+scatp4= scatp3 + scale_fill_distiller(palette="Greys", direction=1) 
+scatp4
+```
+
+The extra space you see can dissappear using:
+
+```{r, eval=TRUE}
+scatp5 = scatp4 +  scale_x_continuous(expand = c(0, 0)) + 
+         scale_y_continuous(expand = c(0, 0)) 
+scatp5
+```

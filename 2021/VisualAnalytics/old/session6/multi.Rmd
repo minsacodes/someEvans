@@ -1,0 +1,467 @@
+<br> 
+<center><img src="http://i.imgur.com/sSaOozN.png" width="500"></center>
+
+
+## Course: VISUAL ANALYTICS FOR POLICY AND MANAGEMENT
+
+### Prof. José Manuel Magallanes, PhD 
+* Visiting Professor of Computational Policy at Evans School of Public Policy and Governance, and eScience Institute Senior Data Science Fellow, University of Washington.
+* Professor of Government and Political Methodology, Pontificia Universidad Católica del Perú. 
+
+
+_____
+
+
+# Session 6: Tabular data: Multivariate data
+
+
+_____
+
+
+We collect multiple variables for a particular purpose, knowing that social complexity can hardly be directly explained with bivariate or univariate approaches. As it is difficult to visualize information with high dimensional data; you should consider summarising all these variable into a composite index (latent), as I showed in session 2.
+
+However, if you have a good reason to keep the original data, let me show you some plots you may use.
+
+_____
+
+
+This time, I will use the [data about city safety](https://jpn.nec.com/en/global/ad/insite/download/economist/en/data_workbook_dl.html):
+
+```{r, eval=TRUE}
+library(openxlsx)
+link="https://github.com/EvansDataScience/data/raw/master/safeCitiesIndexAll.xlsx"
+
+safe=read.xlsx(link)
+```
+
+
+The variables available are:
+
+```{r, eval=TRUE}
+names(safe)
+```
+
+These several variables are telling us information about the safety levels of some cities in the world, and are related to **D**_igital_, **H**_ealth_, **I**_nfrastructure_, and **P**_ersonal_ dimensions. For each of these dimensions, there are measures of actions taken (**In**), and results (**Out**). We have 49 variables.
+
+Would making a plot of 49 variables  be a good idea?
+
+Let's make  a correlation matrix:
+
+```{r, eval=TRUE}
+cormat <- round(cor(safe[,-1]),2)
+```
+
+
+The correlation matrix can be plotted if we turn it into a **long data frame**:
+
+```{r, eval=TRUE}
+library(reshape2)
+long_cormat <- melt(cormat)
+head(long_cormat)
+```
+
+
+```{r, eval=TRUE}
+library(ggplot2)
+ggplot(data = long_cormat, aes(x=Var1, y=Var2, fill=value)) + 
+  geom_tile()
+```
+
+```{r, eval=TRUE}
+get_upper_tri <- function(matrix){
+    matrix[lower.tri(matrix)]= NA
+    return(matrix)
+  }
+
+# then
+upper_tri <- get_upper_tri(cormat)
+```
+```{r, eval=TRUE}
+upper_tri_long=melt(upper_tri, na.rm = TRUE)
+```
+
+
+```{r, eval=TRUE}
+base  = ggplot(data = upper_tri_long, aes(Var2, Var1)) + theme_classic()
+corrs = base + geom_tile(aes(fill = value),color = "white") 
+corrs
+```
+```{r, eval=TRUE}
+corrs = corrs + scale_fill_gradient2(low = "blue", 
+                                     high = "red", 
+                                     mid = "white", 
+                                     midpoint = 0, 
+                                     limit = c(-1,1), 
+                                     space = "Lab", 
+                                     name="Pearson\nCorrelation") 
+
+corrs
+```
+```{r, eval=TRUE, fig.width=10,fig.height=10}
+corrs = corrs + theme(axis.text.x = element_text(angle = 45, 
+                                                 vjust = 1, 
+                                                 size = 12, 
+                                                 hjust = 1)) 
+corrs
+```
+
+There is **GGally** a package that help ggplots make this work easier:
+
+```{r, eval=TRUE}
+library(GGally) # may need to install
+
+ggcorr(safe[,-1], # Data without melting
+       hjust = 0.9,# distance to plot (diagonal)
+       size=1, # font size
+       layout.exp=4, # width so that variable names are shown
+       low = 'red',high = 'blue') # color scale
+```
+
+When using **ggcorr** you can work as in ggplot, adding layers:
+
+```{r, eval=TRUE}
+base= ggcorr(safe[,-1],size=1,layout.exp=4,hjust=0.9,
+             nbreaks = 3, # 3 intervals 
+             palette = "PuOr")
+
+base + guides(fill=guide_legend("some title")) # if you need a title for legend
+```
+
+However, this tells you information about the variables (columns), but not about the cases (rows). You may try the **heatmap** to see cases and variables.
+
+Heatmaps will show you the whole data set. First, we need some reshaping:
+```{r, eval=TRUE}
+safeA=melt(safe, # all the data
+           id.vars = 'city') # BUT state the unit of analysis (unique)
+head(safeA)
+```
+
+Again, the _melting_ changed the direction of the data: the columns were sent into rows. This looks like panel data format or _long format_ (the original is the _wide format_). Now, the heatmap using this format:
+
+```{r, eval=TRUE}
+
+base = ggplot(data = safeA, aes(x = variable,
+                                y =city)) 
+
+heat1= base +  geom_tile(aes(fill = value)) 
+heat1
+```
+
+Here you can see what rows have higher or lower colors on what set of variables. You can add color pallette:
+
+```{r, eval=TRUE}
+#inverse color -1
+heat2 = heat1 + scale_fill_gradient(low = 'grey',high = "black")
+#scale_fill_distiller(palette = "RdYlGn",direction = 1,)  
+heat2
+```
+
+The column and row names need some work:
+
+```{r, eval=TRUE}
+heat2 + theme(axis.text.x = element_text(angle = 90, 
+                                         hjust = 1,
+                                         size = 4),
+              axis.text.y = element_text(size = 4))
+```
+
+
+The last heatmap above could be 'ordered' so that column and row positions can give us more information:
+
+```{r, eval=TRUE}
+# change in REORDER
+base= ggplot(data = safeA, aes(x = reorder(variable, 
+                                           value, median, order=TRUE),
+                               y =reorder(city,
+                                          value, median, order=TRUE)))
+# THIS IS THE SAME
+base + geom_tile(aes(fill = value)) + 
+    scale_fill_gradient(low = 'grey90',high = "grey50") +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1,size = 4),
+              axis.text.y = element_text(size = 4))
+```
+
+This is still hard to read. An alternative could be to average each dimension:
+
+```{r, eval=TRUE}
+library(magrittr)
+
+safe$meanDIN=apply(safe[,c(grep("D_In_", colnames(safe) ))],1,mean)%>%round(2)
+safe$meanDOUT=apply(safe[,c(grep("D_Out_", colnames(safe) ))],1,mean)%>%round(2)
+
+safe$meanHIN=apply(safe[,c(grep("H_In_", colnames(safe) ))],1,mean)%>%round(2)
+safe$meanHOUT=apply(safe[,c(grep("H_Out_", colnames(safe) ))],1,mean)%>%round(2)
+
+safe$meanIIN=apply(safe[,c(grep("I_In_", colnames(safe) ))],1,mean)%>%round(2)
+safe$meanIOUT=apply(safe[,c(grep("I_Out_", colnames(safe) ))],1,mean)%>%round(2)
+
+safe$meanPIN=apply(safe[,c(grep("P_In_", colnames(safe) ))],1,mean)%>%round(2)
+safe$meanPOUT=apply(safe[,c(grep("P_Out_", colnames(safe) ))],1,mean)%>%round(2)
+
+
+```
+
+Let's keep all the **Input** variables:
+
+```{r, eval=TRUE}
+safeINS=safe[,c(1,grep("IN$", colnames(safe)))] # end with
+names(safeINS)=c("city",'HEALTH','DIGITAL','INFRASTR','PERSONAL')
+head(safeINS)
+```
+
+
+Just reshaping for ggplot:
+```{r, eval=TRUE}
+safeINS_long=melt(safeINS,id.vars = 'city')
+head(safeINS_long)
+```
+
+
+We are using a radar plot this time:
+
+```{r, fig.width=20, fig.height=15, eval=TRUE}
+base  = ggplot(safeINS_long, aes(x = variable, y = value, group = city))
+
+plot1 = base + geom_polygon(fill = 'gray',col='orange') + coord_polar()
+
+plot2 = plot1 + facet_wrap(~city,# one plot per city
+                           ncol = 10) # ten plot per row
+plot2
+```
+
+The radar plot describes how a cases is doing in every dimension (we have four dimensions). 
+
+We could improve the plot by ordering the facet and increasing the font size ofthe name of dimensions (X), and having less columns:
+
+```{r, fig.width=15, fig.height=25, eval=TRUE}
+
+plot2 = plot1 + facet_wrap(~reorder(city,value, median, order=TRUE),ncol = 7)
+
+
+plot3 = plot2 + theme(axis.text.x = element_text(size = 8)) 
+plot3 
+```
+
+We can also highlight the case's names, let's change the _theme_ from above:
+
+```{r, fig.width=15, fig.height=25, eval=TRUE}
+plot3 = plot2 + theme(axis.text.x = element_text(size = 8),
+                legend.position="none",
+                strip.text = element_text(size = 20)) #here!!!
+plot3 
+```
+
+You could add extra customization if wanted:
+
+```{r, fig.width=15, fig.height=25, eval=TRUE}
+
+### arguments
+newBackGroundGrid=element_rect(fill = "white",
+                         colour = "red",
+                         size = 3,
+                         linetype = "dashed")
+
+newBackLineGrid=element_line(size = 3,
+                      linetype = 'solid',
+                      colour = "lightblue")
+
+### more customization
+plot3+ theme(panel.background = newBackGroundGrid,
+             panel.grid.major = newBackLineGrid)
+                        
+```
+
+
+The colors above **are not** the best choice, I just used them for you to notice where to make changes. Keep in mind that areas are difficult to compare, so the plots above might be used with care.
+
+Finally, let me work with the health data for both input and output:
+```{r, eval=TRUE}
+safeH=safe[,c(1,grep("meanH", colnames(safe) ))]
+# flag to know when output was higher than input
+safeH$upH=safeH$meanHOU>safeH$meanHIN
+# check
+head(safeH)
+```
+
+Now plot:
+
+```{r, eval=TRUE}
+library(ggplot2)
+base=ggplot(data=safeH,
+            aes(x=meanHIN,y=meanHOUT))
+io1= base + geom_point() 
+io1
+```
+
+
+Use the flag for color point:
+
+```{r, eval=TRUE}
+io1= base + geom_point(aes(color=upH))
+io1=io1 + ylim(c(0,100)) + xlim(c(0,100)) + coord_fixed(ratio = 1)
+io1
+```
+
+Show some names:
+
+```{r, eval=TRUE}
+library(ggrepel)
+io1= io1 + geom_text_repel(aes(label=ifelse(upH,"",city)))
+io1 = io1 + theme(legend.position = "none")
+io1= io1 + labs(title = "title here")
+io1
+```
+
+
+Let e reshape this _safeH_ to long format
+```{r, eval=TRUE}
+# create long format
+safeHLong <- melt(safeH, id.vars = c('city','upH'))
+```
+
+Now take a look at the parallel plot:
+```{r, eval=TRUE}
+base = ggplot(safeHLong, aes(x = variable, y = value, group = city)) 
+base +  geom_path() 
+```
+
+Improve with color:
+
+```{r, eval=TRUE}
+base +  geom_path(aes(color=upH)) 
+```
+
+Send true cases to second plane:
+
+```{r, eval=TRUE}
+base +  geom_path(aes(color=upH,alpha=ifelse(upH,0.5,1))) 
+```
+
+We add labels:
+
+```{r, eval=TRUE}
+parallel= base +  geom_path(aes(color=upH,alpha=ifelse(upH,0.5,1)))  
+parallel= parallel + geom_text_repel(aes(label=ifelse(upH,"",city)),
+                                     size=2)
+parallel
+```
+
+Improving previous plot:
+
+```{r, eval=TRUE}
+# no legend
+parallel= parallel + theme(legend.position = "none")
+# shrink empty areas
+parallel= parallel +  scale_x_discrete(expand = c(0.1,0))
+
+parallel
+```
+
+
+Alternative to previous plot:
+
+```{r, eval=TRUE}
+base2 = ggplot(safeHLong[!safeHLong$upH,], 
+              aes(x = variable, y = value, group = city)) 
+
+parallel1= base2 +  geom_path(aes(color=city))  
+parallel1
+```
+
+Improving previous plot:
+
+```{r, eval=TRUE}
+# labels
+parallel1 = parallel1 + geom_text_repel(aes(label=ifelse(upH,"",city)),
+                                     size=4)
+# no legend
+parallel1= parallel1 + theme(legend.position = "none")
+# shrink empty spaces
+parallel1= parallel1 +  scale_x_discrete(expand = c(0.1,0))
+
+parallel1= parallel1 + labs(title = "title here")
+parallel1
+```
+
+
+Let's explore this difference:
+```{r, eval=TRUE}
+summary(safeH$meanHOUT-safeH$meanHIN)
+```
+
+Let's keep the difference above 20% and above 30%
+```{r, eval=TRUE}
+safeH$jumpH20=abs(safeH$meanHOUT-safeH$meanHIN)>20
+safeH$jumpH30=abs(safeH$meanHOUT-safeH$meanHIN)>30
+```
+
+Recreate long format:
+```{r, eval=TRUE}
+# create long format
+safeHLong <- melt(safeH, id.vars = c('city','upH','jumpH20','jumpH30'))
+```
+
+These are cities that do very well: 
+```{r, eval=TRUE}
+base3 = ggplot(safeHLong[safeHLong$jumpH20,], 
+              aes(x = variable, y = value, group = city)) 
+
+parallel2= base3 +  geom_path()  
+parallel2= parallel2+ geom_text_repel(aes(label=ifelse(jumpH20,city,"")),
+                                     size=2)
+parallel2 + theme(legend.position = "none") 
+```
+
+You color the cities that went extraordinary:
+
+```{r, eval=TRUE}
+base3 = ggplot(safeHLong[safeHLong$jumpH20,], 
+              aes(x = variable, y = value, group = city)) 
+
+parallel2= base3 +  geom_path(aes(color=jumpH30))  #coloring
+parallel2= parallel2+ geom_text_repel(aes(label=ifelse(jumpH20,city,"")),
+                                     size=2)
+parallel2 
+```
+
+Using facet to help the eye:
+
+```{r, eval=TRUE}
+safeHLong$jumpH30=factor(safeHLong$jumpH30,
+                             levels=c(TRUE,FALSE),
+                             labels = c('above 30%','20%-30%'))
+
+base3 = ggplot(safeHLong[safeHLong$jumpH20,], 
+              aes(x = variable, y = value, group = city)) 
+
+parallel2= base3 +   geom_path(aes(color=jumpH30))  
+parallel2= parallel2+ geom_text_repel(aes(label=ifelse(jumpH20,city,"")),
+                                     size=4)
+parallel2= parallel2 +  scale_x_discrete(expand = c(0.1,0))
+parallel2= parallel2 + theme(legend.position = "none") 
+parallel2= parallel2 + facet_grid(~jumpH30)
+parallel2= parallel2 + labs(title = "title here")
+parallel2
+```
+
+Combining the previous plots:
+
+```{r, eval=TRUE, fig.height=15,fig.width=15}
+library(ggpubr)
+
+# embedding ggarrange
+
+row1Plot=parallel2
+row2Plot=ggarrange(io1, parallel1, 
+                    ncol = 2)
+
+ggarrange(row1Plot,row2Plot,
+          nrow = 2 
+          ) 
+
+```
+
+
+
+
+

@@ -1,0 +1,239 @@
+---
+title: ""
+output:
+  html_document:
+    toc: no
+pagetitle: session1_visualAnalytics
+---
+
+<br> 
+<center><img src="http://i.imgur.com/sSaOozN.png" width="500"></center>
+
+
+## Course: VISUAL ANALYTICS FOR POLICY AND MANAGEMENT
+
+### Prof. José Manuel Magallanes, PhD 
+* Visiting Professor of Computational Policy at Evans School of Public Policy and Governance, and eScience Institute Senior Data Science Fellow, University of Washington.
+* Professor of Government and Political Methodology, Pontificia Universidad Católica del Perú. 
+
+_____
+<a id='home'></a>
+
+# Session 1
+
+In this session we will briefly review some basic principles. We will cover:
+
+1. [Data](#Data).
+2. [Elements](#Elements).
+3. [Objects](#Objects).
+
+
+## DATA
+
+In general, it all starts with a data file. In my case, I have the data in this link:
+```{r dataLink, eval=FALSE}
+location="https://github.com/EvansDataScience/data/raw/master/"
+file="hsb_ok.sav"
+
+linkToFile=paste0(location,file)
+```
+
+The object **link** only has the location of the file, then we can read it like this:
+
+```{r openFile, eval=FALSE}
+library(foreign)
+
+hsb=read.spss(linkToFile,to.data.frame = T)
+```
+The object **hsb** has tha data. Software like R can try to recognize the data types, but it may not always get it right:
+
+```{r strHSB, eval=FALSE}
+str(hsb)
+```
+
+We need to make sure we get it right!
+
+From the previous result: Which remain as factor, as character, or as ordinal? (check [here](https://github.com/UWDataScience2020/data/blob/master/hsb_ok_metadata.pdf))
+
+```{r changeType, eval=FALSE}
+as.ordered(hsb$SES)
+```
+Data types are critical for selecting the right visual.
+
+
+[home](#home)
+
+____
+
+<a id='Elements'></a>
+
+
+
+## ELEMENTS
+
+### 1. **BASE**
+
+You may want to create a **base** component, just to inform the data frame you are using and the variable(s) to plot:
+```{r baseGGplot, eval=FALSE}
+library(ggplot2)
+
+base=ggplot(data=hsb, # data frame
+            aes(x=MATH)) # what to plot
+```
+
+Notice that in **aes**thetics you tell what variable will be used to represent some information in the plot:
+
+* Dimensions x, y, z .
+* Color.
+* Size.
+* Label.
+
+You may need to customize the **aes** in other elements.
+
+### 2. **GEOMs**
+
+Let's make a simple histogram:
+
+```{r histodefault, eval=FALSE}
+#
+plot1= base + geom_histogram()
+# I need this to see the result:
+plot1
+```
+
+The GEOM selected depends on the data type.
+
+
+### 3. **LABELS**
+
+Label are important to guide the reader. You have main title, subtitle, source, and axis labels.
+
+```{r labels, eval=FALSE, eval=FALSE}
+# all text for titles
+Titles=list(Title="Nice title",
+            SubTi="sub is here",
+            XTi="Level of MATH",
+            YTi="Amount of students",
+            Sou="Source: imaginary")
+#
+# using the previous texts
+plot2= plot1 + labs(title = Titles$Title,
+                    subtitle = Titles$SubTi,
+                    x=Titles$XTi,
+                    y=Titles$YTi,
+                    caption = Titles$Sou)
+plot2
+```
+
+### 4. **ANNOTATION**
+
+Here, you can write freely some text in a particular location of the plot:
+
+```{r Annot, exercise=TRUE, eval=FALSE, eval=FALSE}
+
+#texts for annotation
+message="HELLO"
+#
+#annotating
+plot3=plot2 + annotate(geom = 'text',
+                       x =50,y=20, #position
+                       label=message)
+plot3
+```
+
+### 5. **BACKGROUND**
+
+You can decide what background to choose:
+
+```{r Background, exercise=TRUE, eval=FALSE}
+plot4=plot3+ theme_classic()
+plot4
+```
+
+
+
+
+
+
+[home](#home)
+
+____
+
+<a id='Objects'></a>
+
+## OBJECTS
+
+Every visual is composed of a set of objects that will encode the information you are trying to share. In ggplot2 jargon, they are known as the **geoms**, as you have already seen. You can customize every geom.
+
+Our previous histogram can have **aes**thetics:
+
+### 1. **LEGEND**
+
+If you use color, shape or other attribute in the aesthetics of the geom, you will also produce a legend.
+
+```{r legend, eval=FALSE}
+plot1legend=base + geom_histogram(aes(color=SEX))
+plot1legend
+```
+
+You can improve the previous result with facets:
+
+### 2. **FACETs**
+
+Facets will use variables to divide the plotting area:
+
+```{r facet1, eval=FALSE}
+plot1legFacet1=plot1legend + facet_grid(~SEX)
+plot1legFacet1
+```
+
+```{r facet2, eval=FALSE}
+plot1legFacet2=plot1legend + facet_grid(SES~SEX)
+plot1legFacet2
+```
+
+### 3.**DOTS**
+
+Dots are theoretically an adimensional object (no width, no height), so they can serve you to represent location. 
+
+These are the options available in R:
+
+
+<center><img src="https://github.com/EvansDataScience/data/raw/master/dots.jpeg" width="300"></center>
+
+Let me select one dot option in the geom **point** by altering its _shape_:
+
+```{r dots, eval=FALSE}
+base=ggplot(data= hsb,
+            aes(x=MATH,y=WRTG)) + theme_light()
+plotDots=base + geom_point(shape=16)
+plotDots
+```
+
+### **4. LINES**
+
+Lines are unidimensional objects. They mainly represent distance, so they are a clear option for numerical values; if they were to be used for categorical values, make sure the audience will not interpret distance.
+
+They can also serve:
+– for representing direction (with or without arrow tips) and slope.
+
+– for representing linear relationships.
+
+– for representing angles (two lines needed).
+
+These are the options:
+
+<center><img src="https://github.com/EvansDataScience/data/raw/master/lines.png" width="300"></center>
+
+Let me select one option when I request a geom (smooth) that will compute a linear trend to the previous plot:
+
+```{r lines, eval=FALSE}
+plotLine=plotDots + geom_smooth (method = lm,
+                                 se=FALSE,
+                                 colour =" red ",
+                                 lty=5)
+plotLine
+```
+
+[home](#home)
+

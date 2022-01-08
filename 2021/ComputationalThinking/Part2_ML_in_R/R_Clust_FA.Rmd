@@ -1,0 +1,539 @@
+<br> 
+<center><img src="http://i.imgur.com/sSaOozN.png" width="500"></center>
+
+
+## Course:  COMPUTATIONAL THINKING FOR GOVERNANCE ANALYTICS
+
+### Prof. José Manuel Magallanes, PhD 
+* Visiting Professor of Computational Policy at Evans School of Public Policy and Governance, and eScience Institute Senior Data Science Fellow, University of Washington.
+* Professor of Government and Political Methodology, Pontificia Universidad Católica del Perú. 
+
+
+_____
+<a id='part1'></a>
+
+# R for Clustering
+
+
+Collect the data we prepared in Python:
+
+```{r collecting, eval=TRUE}
+link='https://github.com/EvansDataScience/data/raw/master/hdidemocia.RDS'
+# a RDS file from the web needs:
+myFile=url(link)
+
+# reading in data:
+fromPy=readRDS(file = myFile)
+
+# reset indexes to R format:
+row.names(fromPy)=NULL
+```
+
+
+Let's explore three types of clustering approaches.
+
+1. Partitioning: You will request a particular number of clusters to the algorithm. The algorithm will put every case in one of those clusters. Outliers will affect output.
+
+![Source: https://en.wikipedia.org/wiki/Cluster_analysis](https://upload.wikimedia.org/wikipedia/commons/c/c8/Cluster-2.svg)
+
+2. Hierarchizing: You will ask the algorithm to find all possible ways cases can be clustered, individually and in subgroups following a tree-construction/deconstruction approach. You should determine the right amount of clusters.Outliers will affect output.
+
+![Source: https://quantdare.com/hierarchical-clustering/](https://quantdare.com/wp-content/uploads/2016/06/AggloDivHierarClustering-800x389.png)
+
+3. Based on Density
+
+This approach will cluster cases as long as they are close to each other at a predetermined distance. You need to input the distance and the minimal amount of cases in a neighboorhood to be considered a cluster. The algorithm is not affected by outliers.
+
+![https://commons.wikimedia.org/wiki/Cluster_analysis](https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/DBSCAN-Gaussian-data.svg/600px-DBSCAN-Gaussian-data.svg.png)
+
+_____
+
+## Preparing data:
+
+For all cases, you need the DISTANCE MATRIX:
+
+
+**a.** Explore variables you will used for clustering
+```{r, eval=TRUE}
+
+dfClus=fromPy[,c('HDI','Score','kWh_pop')]
+summary(dfClus)
+```
+
+
+**b.** Rescale units if needed into a new variable:
+```{r, eval=TRUE}
+dfClus=scale(dfClus)
+
+summary(dfClus)
+
+```
+
+
+**c.** Rename subset indexes and Verify what your input is:
+
+```{r clusRename, eval=TRUE}
+row.names(dfClus)=fromPy$Country
+head(dfClus)
+```
+
+
+
+
+
+**d.** Set random seed:
+```{r clusSeed, eval=TRUE}
+set.seed(999) # this is for replicability of results
+```
+
+
+**e.** Decide distance method and compute distance matrix:
+```{r clusDistance, eval=TRUE}
+library(cluster)
+dfClus_D=cluster::daisy(x=dfClus)
+```
+
+
+## Partitioning technique
+
+### 1. Apply function: you need to indicate the amount of clusters required.
+
+```{r clusPam, eval=TRUE}
+NumCluster=4
+res.pam = pam(x=dfClus_D,
+              k = NumCluster,
+              cluster.only = F)
+```
+
+
+### 2. Clustering results. 
+
+**2.1 ** Add results to original data frame:
+
+```{r cluspamSave, eval=TRUE}
+fromPy$pam=as.factor(res.pam$clustering)
+```
+
+**2.2 ** Query data frame as needed:
+
+Example 1:
+```{r cluspamquery1, eval=TRUE}
+fromPy[fromPy$pam==1,'Country']
+```
+
+Example 2:
+
+```{r cluspamquery2, eval=TRUE}
+fromPy[fromPy$Country=="Peru",'pam']
+```
+
+**2.2 ** REPORT: Table of clusters
+
+```{r cluspamREPORTtable, eval=TRUE}
+table(fromPy$pam)
+```
+
+
+### 3. Evaluate Results.
+
+**3.1** REPORT: Average silhouettes
+
+```{r cluspamREPORT_silave, eval=TRUE}
+library(factoextra)
+fviz_silhouette(res.pam)
+```
+
+**3.2** REPORT: Detecting anomalies
+
+a. Save individual silhouettes:
+
+```{r cluspamREPORT_datasil, eval=TRUE}
+pamEval=data.frame(res.pam$silinfo$widths)
+head(pamEval)
+```
+
+b. Request negative silhouettes: The ones that are poorly clustered.
+
+```{r cluspamREPORT_silnegative, eval=TRUE}
+pamEval[pamEval$sil_width<0,]
+```
+
+
+## Hierarchizing: agglomerative
+
+### 1. Apply function: 
+
+```{r clusagn, eval=TRUE}
+library(factoextra)
+
+res.agnes= hcut(dfClus_D, 
+                k = NumCluster,isdiss=T,
+                hc_func='agnes',
+                hc_method = "ward.D2")
+```
+
+### 2. Clustering results. 
+
+**2.1 ** Add results to original data frame:
+
+
+```{r clusagnSave, eval=TRUE}
+fromPy$agn=as.factor(res.agnes$cluster)
+```
+
+
+**2.2 ** Query data frame as needed:
+
+Example 1:
+
+```{r clusagnQuery1, eval=TRUE}
+fromPy[fromPy$agn==1,'Country']
+```
+
+Example 2:
+
+```{r clusagnQuery2, eval=TRUE}
+fromPy[fromPy$Country=="Peru",'agn']
+```
+
+
+**2.2 ** REPORT: Table of clusters
+
+Reporting results:
+```{r clusagnREPORTtable, eval=TRUE}
+table(fromPy$agn)
+```
+
+
+### 3. Evaluate Results.
+
+**3.1a** REPORT: Dendogram
+
+
+```{r clusagnREPORTdendo, eval=TRUE}
+fviz_dend(res.agnes,k=NumCluster, cex = 0.7, horiz = T)
+```
+
+**3.1b** REPORT: Average silhouettes:
+
+```{r clusagnREPORTsilave, eval=TRUE}
+library(factoextra)
+fviz_silhouette(res.agnes)
+```
+
+**3.2** REPORT: Detecting anomalies
+
+a. Saving silhouettes:
+
+```{r clusagnREPORTsildata, eval=TRUE}
+agnEval=data.frame(res.agnes$silinfo$widths)
+head(agnEval)
+```
+
+b. Requesting negative silhouettes:
+
+```{r clusagnREPORTsilnega, eval=TRUE}
+agnEval[agnEval$sil_width<0,]
+```
+
+
+## Hierarchizing: divisive
+
+### 1. Apply function: you need to indicate the amount of clusters required.
+
+```{r clusdia, eval=TRUE}
+library(factoextra)
+
+res.diana= hcut(dfClus_D, k = NumCluster,
+                 hc_func='diana',
+                 hc_method = "ward.D")
+```
+
+
+### 2. Clustering results. 
+
+**2.1 ** Add results to original data frame:
+
+
+```{r clusdiaSave, eval=TRUE}
+fromPy$dia=as.factor(res.diana$cluster)
+```
+
+
+**2.2 ** Query data frame as needed:
+
+Example 1:
+
+```{r clusdiaQuery1, eval=TRUE}
+fromPy[fromPy$dia==1,'Country']
+```
+
+Example 2:
+
+```{r clusdiaQuery2, eval=TRUE}
+fromPy[fromPy$Country=="Peru",'dia']
+```
+
+
+**2.2 ** REPORT: Table of clusters
+
+Reporting results:
+```{r clusdiaREPORTtable, eval=TRUE}
+table(fromPy$dia)
+```
+
+
+### 3. Evaluate Results.
+
+**3.1a** REPORT: Dendogram
+
+
+```{r clusdiaREPORTdendo, eval=TRUE}
+fviz_dend(res.diana,k=NumCluster, cex = 0.7, horiz = T)
+```
+
+**3.1b** REPORT: Average silhouettes:
+
+```{r clusdiaREPORTavesil, eval=TRUE}
+library(factoextra)
+fviz_silhouette(res.diana)
+```
+
+**3.2** REPORT: Detecting anomalies
+
+a. Saving silhouettes:
+
+```{r clusdiaREPORTdata, eval=TRUE}
+diaEval=data.frame(res.diana$silinfo$widths)
+head(diaEval)
+```
+
+b. Requesting negative silhouettes:
+
+```{r clusdiaREPORTsilnega, eval=TRUE}
+diaEval[diaEval$sil_width<0,]
+```
+
+
+## Density-based clustering
+
+You input the distance and the minimal number of neighbors that form a cluster.
+
+```{r clusdbKNN, eval=TRUE}
+library(dbscan)
+#minNeighs>= num cols in data
+minNeighs=4
+kNNdistplot(dfClus_D, k = minNeighs)
+abline(h=0.3, col = "red", lty=2)
+```
+
+
+```{r clusdb, eval=TRUE}
+distance=0.3
+res.db = dbscan::dbscan(dfClus_D, 
+                        eps=distance, 
+                        minPts=minNeighs)
+```
+
+**REPORT**:
+
+How many cluster were produced? and How many outliers are there?
+
+```{r clusdbREPORT, eval=TRUE}
+# '0' identifies outliers: 
+res.db
+```
+
+Save result:
+
+```{r clusdbSave, eval=TRUE}
+fromPy$db=as.factor(res.db$cluster)
+```
+
+
+# How to compare clustering?
+
+* Prepare a bidimensional map:
+
+```{r cmdMap, eval=TRUE}
+projectedData = cmdscale(dfClus_D, k=2)
+#
+# save coordinates to original data frame:
+fromPy$dim1 = projectedData[,1]
+fromPy$dim2 = projectedData[,2]
+```
+
+
+* See the "map":
+
+```{r plotCmdmap, eval=TRUE}
+base= ggplot(data=fromPy,
+             aes(x=dim1, y=dim2,
+                 label=Country)) 
+base + geom_text(size=2)
+```
+
+* Plot results from PAM:
+```{r plotpam, eval=TRUE}
+pamPlot=base + labs(title = "PAM") + geom_point(size=2,
+                                              aes(color=pam),
+                                              show.legend = F)  
+```
+
+* Plot results from Hierarchical AGNES:
+```{r plotagn, eval=TRUE}
+agnPlot=base + labs(title = "AGNES") + geom_point(size=2,
+                                              aes(color=agn),
+                                              show.legend = F) 
+```
+
+
+* Plot results from Hierarchical DIANA:
+```{r plotdia, eval=TRUE}
+diaPlot=base + labs(title = "DIANA") + geom_point(size=2,
+                                              aes(color=dia),
+                                              show.legend = F) 
+```
+
+
+Compare visually:
+
+```{r plotcompare, eval=TRUE}
+library(ggpubr)
+ggarrange(pamPlot, agnPlot, diaPlot,ncol = 3)
+```
+
+* Plot results from DBSCAN:
+```{r plotdb, eval=TRUE}
+dbPlot= base + labs(title = "DBSCAN") + geom_point(aes(color=db),
+                                               show.legend = T) 
+dbPlot
+```
+
+Annotating:
+
+```{r plotdb_annot1, eval=TRUE}
+library(ggrepel)
+dbPlot + geom_text_repel(size=3,aes(label=Country))
+```
+
+Annotating outliers:
+
+```{r plotdb_annot2, eval=TRUE}
+LABEL=ifelse(fromPy$db==0,fromPy$Country,"")
+
+dbPlot + geom_text_repel(aes(label=LABEL))
+```
+
+# <font color="red">FACTOR ANALYSIS</font>
+
+You would like turn the 5 dimensions of democracy index into one, without following an arithmetic approach, but an algebraic one, instead. Dimension reduction is the job of latent variable analysis, and that's the way proposed here.
+
+
+Let me subset our original data frame:
+
+```{r, eval=TRUE}
+subDemo=fromPy[,c(8:12)]
+```
+
+
+Our *subDemo* DF has the data to compute the one index we need. I will show the technique called **confirmatory factor analysis**:
+
+```{r, eval=TRUE}
+names(subDemo)
+```
+
+
+```{r, eval=TRUE}
+library(lavaan)
+
+model='
+dem=~Electoralprocessandpluralism + Functioningofgovernment + Politicalparticipation + Politicalculture + Civilliberties
+'
+
+fit<-cfa(model, data = subDemo,std.lv=TRUE)
+indexCFA=lavPredict(fit)
+```
+
+The index computed is not in a range from 0 to 10:
+```{r, eval=TRUE}
+library(magrittr)
+indexCFA%>%head(10)
+```
+
+
+We force its return to "0 to 10":
+
+```{r, eval=TRUE}
+library(scales)
+indexCFANorm=rescale(as.vector(indexCFA), 
+                     to = c(0, 10))
+```
+
+
+So, this is our index:
+```{r, eval=TRUE}
+fromPy$demo_FA=indexCFANorm
+```
+
+Let me plot this index:
+```{r, eval=TRUE}
+library(ggplot2)
+base=ggplot(data=fromPy,
+            aes(x=demo_FA))
+base+geom_histogram()
+```
+
+
+Let me compare the new index with the original score:
+```{r, eval=TRUE}
+base=ggplot(data=fromPy,
+            aes(x=demo_FA,y=Score))
+base+geom_point()
+```
+
+Let me see some evaluation measures of our index for democracy:
+
+```{r, eval=TRUE}
+evalCFA1=parameterEstimates(fit, standardized =TRUE)
+```
+
+* Loadings
+```{r, eval=TRUE}
+evalCFA1[evalCFA1$op=="=~",c('rhs','std.all','pvalue')]
+```
+
+* Some coefficients:
+
+```{r, eval=TRUE}
+evalCFA2=as.list(fitMeasures(fit))
+```
+
+* You want p.value of Chi-Square greater than 0.05:
+
+```{r, eval=TRUE}
+evalCFA2[c("chisq", "df", "pvalue")] 
+```
+
+* You want the Tucker-Lewis > 0.9:
+
+```{r, eval=TRUE}
+evalCFA2$tli # > 0.90
+```
+
+* You want RMSEA < 0.05:
+
+```{r, eval=TRUE}
+evalCFA2[c( 'rmsea.ci.lower','rmsea','rmsea.ci.upper')] 
+```
+
+You can see how it looks:
+
+```{r, eval=TRUE}
+library(semPlot)
+semPaths(fit, what='std', nCharNodes=10, sizeMan=8,
+         edge.label.cex=1.5, fade=T,residuals = F)
+```
+
+
+

@@ -1,0 +1,10 @@
+name: Publish Document
+title:
+username:
+account: rpubs
+server: rpubs.com
+hostUrl: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/733558/43a6a8cf3e8545c68af97de41c7b0f71
+bundleId: https://api.rpubs.com/api/v1/document/733558/43a6a8cf3e8545c68af97de41c7b0f71
+url: http://rpubs.com/EstadisticaCP_unmsm/733558
+when: 1614792983.219

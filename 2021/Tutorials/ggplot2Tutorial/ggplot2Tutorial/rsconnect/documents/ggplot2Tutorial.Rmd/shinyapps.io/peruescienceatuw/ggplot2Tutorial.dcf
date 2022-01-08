@@ -1,0 +1,12 @@
+name: ggplot2Tutorial
+title: ggplot2Tutorial
+username:
+account: peruescienceatuw
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1652090
+bundleId: 2725955
+url: https://peruescienceatuw.shinyapps.io/ggplot2Tutorial/
+when: 1578941489.61766
+asMultiple: FALSE
+asStatic: FALSE

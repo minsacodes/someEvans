@@ -1,0 +1,319 @@
+<br> 
+<center><img src="http://i.imgur.com/sSaOozN.png" width="500"></center>
+
+
+## Course: VISUAL ANALYTICS FOR POLICY AND MANAGEMENT
+
+### Prof. José Manuel Magallanes, PhD 
+* Visiting Professor of Computational Policy at Evans School of Public Policy and Governance, and eScience Institute Senior Data Science Fellow, University of Washington.
+* Professor of Government and Political Methodology, Pontificia Universidad Católica del Perú. 
+
+
+_____
+
+
+# Session 7: Spatial Data
+_____
+
+
+<a id='open'></a>
+
+# Opening data files
+
+Let's open our data:
+```{r}
+
+linkCSV='https://github.com/Visual-Analytics-Project-UW-EvansSchool/mergedData/raw/main/merged_data.csv'
+
+dataCSV=read.csv(linkCSV)
+```
+
+This is what you have:
+```{r}
+str(dataCSV)
+```
+Now let me open the map:
+
+
+```{r}
+linkMap="https://github.com/Visual-Analytics-Project-UW-EvansSchool/ourMap/raw/main/worldMap.geojson" # link desde github
+library(sf)
+mapWorld=read_sf(linkMap)
+```
+This is the data that came with the map:
+
+```{r, eval=TRUE}
+# see data in map
+head(mapWorld)
+```
+
+Let's add our data to the map data by merging:
+
+```{r, eval=TRUE}
+mapWorldVars=merge(mapWorld, #map first
+                   dataCSV, 
+                   by='ISO3') 
+```
+
+
+You can map the data now using ggplot. Let me do it by layers:
+
+1. Base layer: 
+
+```{r}
+library(ggplot2)
+# plot original map
+base=ggplot(data=mapWorld) + geom_sf(fill='grey90',
+                                     color=NA) + theme_classic()
+
+base #base map
+
+```
+
+2. Data layer:
+
+```{r}
+colMap= base + geom_sf(data=mapWorldVars,
+                       aes(fill=DemoIndex),
+                       color=NA)
+colMap
+```
+
+```{r}
+colMap + scale_fill_gradient(low = 'red',
+                             high= 'blue')
+```
+
+You can try creating a cluster variable:
+Let's see the behavior of each variable of interest:
+
+```{r}
+ggplot(data=mapWorldVars) + geom_boxplot(aes(y=DemoIndex))
+```
+```{r}
+ggplot(data=mapWorldVars) + geom_boxplot(aes(y=HDI))
+```
+
+```{r}
+ggplot(data=mapWorldVars) + geom_boxplot(aes(y=mil_expend))
+```
+One of the data show outliers. We can try **standardization**:
+
+```{r}
+mapWorldVars$HDI_S=as.vector(scale(mapWorldVars$HDI))
+mapWorldVars$DEM_S=as.vector(scale(mapWorldVars$DemoIndex))
+mapWorldVars$MIL_S=as.vector(scale(mapWorldVars$mil_expend))
+```
+
+Let's get some clusters:
+
+```{r}
+#data to cluster
+library(cluster)
+vars=c('HDI_S','DEM_S','MIL_S')
+
+set.seed(123)
+distvars=mapWorldVars[,vars]%>%
+          st_drop_geometry() %>%
+             cluster::daisy()
+
+res.hier=hclust(distvars,"ward.D2")
+
+library(ggdendro)
+ggdendrogram(res.hier)
+
+```
+
+Let's get the clusters:
+
+```{r}
+mapWorldVars$clustH=cutree(res.hier,k=5)%>%as.factor()
+```
+
+Check order:
+
+```{r}
+vars2=c('HDI_S','DEM_S','MIL_S','clustH')
+aggregate(.~clustH,
+          data=mapWorldVars[,vars2]%>%
+          st_drop_geometry(),
+          FUN=median)
+```
+
+Give the right order:
+
+```{r}
+mapWorldVars$clustH=factor(mapWorldVars$clustH,
+                           levels=c(5,1,2,3,4),
+                           labels=c(1,2,3,4,5), 
+                           ordered=T)
+```
+
+
+Now paint the countries (ggplot decides color):
+
+```{r}
+clusterMap= base + geom_sf(data=mapWorldVars,
+                           aes(fill=clustH),
+                           color=NA) # color of border
+clusterMap 
+```
+
+Now you choose the palette (get it from [here](http://colorbrewer2.org/)):
+
+```{r}
+clusterMap+ scale_fill_brewer(palette ='YlOrRd')
+```
+
+
+Some more customization:
+
+```{r}
+#previously
+theLegLabels=c('1_worst',2,3,4,'5_best')
+theLegTitle="World_Order\n(grey is missing)"
+
+#now
+clusterMap+ scale_fill_brewer(palette ='YlOrRd',
+                              direction = -1, # color order
+                              labels=theLegLabels,
+                              name=theLegTitle)
+```
+
+Let me bring two data sets on cities:
+
+```{r}
+library(rio)
+
+linkCity="https://github.com/Visual-Analytics-Project-UW-EvansSchool/mergedData/raw/main/otherData/citiesloc.xlsx"
+
+
+idxcity=import(linkCity)
+
+```
+
+The data on cities is known (it is a summary) but this files has some location info:
+```{r}
+str(idxcity)
+```
+
+Let me use the location of the city to create a spatial object:
+
+```{r}
+idxcity_sf = st_as_sf(idxcity, 
+                      coords = c("lng", "lat"),
+                      crs = st_crs(mapWorldVars))
+
+```
+
+Now we have:
+
+```{r}
+head(idxcity_sf)
+```
+
+As this is a spatial object:
+
+```{r}
+base + geom_sf(data=idxcity_sf)
+```
+
+Let's cluster:
+
+```{r}
+varsidx=c("DIGITAL","HEALTH","INFRASTRUCTURE","PERSONAL")
+
+set.seed(123)
+distvars2=idxcity_sf[,varsidx]%>%
+          st_drop_geometry() %>%
+             cluster::daisy()
+
+res.hier2=hclust(distvars2,"ward.D2")
+
+library(ggdendro)
+ggdendrogram(res.hier2)
+
+```
+
+
+```{r}
+# getClusters
+
+idxcity_sf$clustH=cutree(res.hier2,k=4)%>%as.factor()
+
+#check order:
+
+varsidx=c(varsidx,'clustH')
+aggregate(.~clustH,
+          data=idxcity_sf[,varsidx]%>%
+          st_drop_geometry(),
+          FUN=median)
+```
+
+Since it is in the opposite direction:
+```{r}
+idxcity_sf$clustH=factor(idxcity_sf$clustH,
+                         levels=c(4,3,2,1),
+                         labels =c("bad","middle",'good','very good'),
+                         ordered=T)
+```
+
+Finally:
+
+```{r}
+#previously
+fillLabels=c('1_worst',2,3,'4_best')
+fillTitle="Cities safety"
+nameSize="Population \n(in millions)"
+
+points= base + geom_sf(data=idxcity_sf,
+                             aes(fill=clustH,size=population/1000000),shape=21) 
+#now
+points = points + scale_fill_brewer(palette ='YlOrRd',
+                                direction = -1,
+                                labels=fillLabels,
+                                name=fillTitle)
+points =points + scale_size(name=nameSize,
+                            range = c(0.2,5))
+points
+```
+
+We can facet the plotting area:
+
+```{r}
+points + facet_wrap(~clustH)
+```
+
+Another option is _grid_:
+
+```{r}
+points + facet_grid(~clustH)
+```
+
+Or...
+
+```{r}
+points + facet_grid(clustH~.)
+```
+
+We can alter the legend position:
+
+```{r}
+points + facet_grid(~clustH) +
+    theme(legend.position="bottom", 
+          legend.box = "vertical")
+```
+
+Some additional possibilities:
+```{r}
+points + facet_grid(.~clustH) +
+    theme(legend.position=c("bottom"),
+          legend.box = "vertical",
+          strip.text = element_text(size = 8,color='white'),
+          strip.background = element_rect(color = NA,
+                                          fill='black')
+          )
+```
+
+[home](#home)
+

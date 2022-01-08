@@ -1,0 +1,205 @@
+---
+title: "Session 1"
+output: learnr::tutorial
+runtime: shiny_prerendered
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+
+
+## What data do I have? 
+
+In general, it all starts with a data file. In my case, I have the data in this link:
+```{r dataLink, exercise=FALSE,eval=TRUE, echo=TRUE}
+location="https://github.com/EvansDataScience/data/raw/master/"
+file="hsb_ok.sav"
+
+linkToFile=paste0(location,file)
+```
+
+The object **link** only has the location of the file, then we can read it like this:
+
+```{r openFileexercise=FALSE,eval=TRUE, echo=TRUE}
+library(foreign)
+
+hsb=read.spss(linkToFile,to.data.frame = T)
+```
+The object **hsb** has tha data. Software like R can try to recognize the data types, but it may not always get it right:
+
+```{r strHSB, exercise=TRUE,eval=TRUE, echo=TRUE}
+str(hsb)
+```
+
+We need to make sure we get it right!
+
+From the previous result: Which remain as factor, as character, or as ordinal? (check [here](https://github.com/UWDataScience2020/data/blob/master/hsb_ok_metadata.pdf))
+
+```{r changeType, exercise=TRUE,eval=FALSE, echo=TRUE}
+as.ordered(hsb$SES)
+```
+Data types are critical for selecting the right visual.
+
+## Plot components
+
+1. **BASE**
+
+You may want to create a **base* component, just to inform the data frame you are using and the variable(s) to plot:
+```{r baseGGplot, eval=TRUE, echo=TRUE}
+library(ggplot2)
+
+base=ggplot(data=hsb, # data frame
+            aes(x=MATH)) # what to plot
+```
+
+Notice that in **aes**thetics you tell what variable will be used to represent some information in the plot:
+
+* Dimensions x, y, z .
+* Color.
+* Size.
+* Label.
+
+You may need to customize the **aes** in other elements.
+
+2. **GEOMs**
+
+Let's make a simple bar plot:
+
+```{r barsdefault, exercise=TRUE}
+#
+plot1= base + geom_histogram()
+# I need this to see the result:
+plot1
+```
+
+The GEOM selected depends on the data type.
+
+
+3. **TITLE**
+
+```{r plot1Title, exercise=TRUE, eval=TRUE}
+# all text for titles
+Titles=list(Title="Nice title",
+            SubTi="sub is here",
+            XTi="Level of MATH",
+            YTi="Amount of students",
+            Sou="Source: imaginary")
+#
+# using the previous texts
+plot2= plot1 + labs(title = Titles$Title,
+                    subtitle = Titles$SubTi,
+                    x=Titles$XTi,
+                    y=Titles$YTi,
+                    caption = Titles$Sou)
+plot2
+```
+
+4. **ANNOTATION**
+
+```{r plot1Annot, exercise=TRUE, eval=TRUE}
+
+#texts for annotation
+message="HELLO"
+#
+#annotating
+plot3=plot2 + annotate(geom = 'text',
+                       x =2,y=30, #position
+                       label=message)
+plot3
+```
+
+5. **BACKGROUND**
+
+
+```{r barsBackground, exercise=TRUE}
+plot4=plot3+ theme_classic()
+plot4
+```
+
+## Default changes: position
+
+```{r barsPosition, exercise=TRUE}
+inventedDF=data.frame(schoolType=c("Public", "Private", "Other"),Count=c(200, 20,80))
+Titles=list(Ti="Nice title",STi="sub is here",XTi="Type of school",YTi="Amount of schools",Sou="Source: imaginary")
+annots=list(forBar="HELLO")
+#
+# label position on horizontal
+NEWorder=c('Private','Other','Public')
+#
+library(ggplot2)
+base= ggplot(data=inventedDF,aes(x=schoolType,y=Count)) 
+base= base + theme_classic()
+
+bar1= base + geom_bar(stat = 'identity')
+bar1= bar1 + labs(title = Titles$Ti,subtitle = Titles$STi,
+                  xlab=Titles$XTi,ylab=Titles$YTi,
+                  caption = Titles$Sou)
+# new position for annotation
+bar1= bar1 + annotate(geom = 'text',x = 1,y=30,label=annots$forBar)
+#
+# repositioning bars
+bar1 + scale_x_discrete(limits=NEWorder)
+```
+
+## Default changes: titles alignment
+
+```{r barsChangeTit, exercise=TRUE}
+inventedDF=data.frame(schoolType=c("Public", "Private", "Other"),Count=c(200, 20,80))
+Titles=list(Ti="Nice title",STi="sub is here",XTi="Type of school",YTi="Amount of schools",Sou="Source: imaginary")
+annots=list(forBar="HELLO")
+NEWorder=c('Private','Other','Public')
+
+library(ggplot2)
+base= ggplot(data=inventedDF,aes(x=schoolType,y=Count)) 
+base= base + theme_classic()
+bar1= base + geom_bar(stat = 'identity')
+bar1= bar1 + labs(title = Titles$Ti,subtitle = Titles$STi,
+                  xlab=Titles$XTi,ylab=Titles$YTi,
+                  caption = Titles$Sou)
+bar1= bar1 + annotate(geom = 'text',x = 1,y=30,label=annots$forBar)
+bar1= bar1 + scale_x_discrete(limits=NEWorder)
+# realignment of texts in titles
+bar1 + theme(plot.title= element_text(hjust= 0.5),
+             plot.subtitle= element_text(hjust= 0.5),
+             plot.caption= element_text(hjust= 0))
+
+```
+
+## Default changes: color and legend
+
+Run the code, then:
+
+* Add in theme: **legend.position='top'**
+* Add in scale_fill_brewer: **breaks=NEWorder**
+* Make a change in guides: **guides(fill = "none")**
+
+```{r barsChangeLegCol, exercise=TRUE}
+inventedDF=data.frame(schoolType=c("Public", "Private", "Other"),Count=c(200, 20,80))
+Titles=list(Ti="Nice title",STi="sub is here",XTi="Type of school",YTi="Amount of schools",Sou="Source: imaginary")
+annots=list(forBar="HELLO")
+NEWorder=c('Private','Other','Public')
+
+library(ggplot2)
+base= ggplot(data=inventedDF,aes(x=schoolType,y=Count)) 
+base= base + theme_classic()
+#
+# Adding variable for coloring
+bar1= base + geom_bar(stat = 'identity', aes(fill=schoolType)) 
+#
+bar1= bar1 + labs(title = Titles$Ti,subtitle = Titles$STi,
+                  xlab=Titles$XTi,ylab=Titles$YTi,
+                  caption = Titles$Sou)
+bar1= bar1 + annotate(geom = 'text',x = 1,y=30,label=annots$forBar)
+bar1= bar1 + scale_x_discrete(limits=NEWorder)
+bar1= bar1 + theme(plot.title= element_text(hjust= 0.5),
+                   plot.subtitle= element_text(hjust= 0.5),
+                   plot.caption= element_text(hjust= 0))
+#
+# color and legend changes
+bar1 + scale_fill_brewer(palette = "Accent") + guides(fill = "legend")
+
+```

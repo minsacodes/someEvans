@@ -1,0 +1,279 @@
+<br> 
+<center><img src="http://i.imgur.com/sSaOozN.png" width="500"></center>
+
+
+## Course: VISUAL ANALYTICS FOR POLICY AND MANAGEMENT
+
+### Prof. José Manuel Magallanes, PhD 
+* Visiting Professor of Computational Policy at Evans School of Public Policy and Governance, and eScience Institute Senior Data Science Fellow, University of Washington.
+* Professor of Government and Political Methodology, Pontificia Universidad Católica del Perú. 
+
+
+_____
+<a id='part1'></a>
+
+# Session 2: Creating composite indexes
+
+In this session, you will learn to prepare the variable to be plotted. In general, management has several variables availables, but most of them are raw data that need to go through some processing before becoming information. Let me bring these data about the democracy index created by The Economist:
+
+<iframe width="800" height="300" src="https://en.wikipedia.org/wiki/Democracy_Index#Democracy_Index_by_country_2018&amp;single=true&amp;widget=true&amp;headers=false"></iframe>
+
+This a simple example of a complex concept (_DEMOCRACY_) captured by other simpler concepts. Let me get the data:
+
+```{r, eval=FALSE}
+wikiLink='https://en.wikipedia.org/wiki/Democracy_Index'
+wikiPath='//*[@id="mw-content-text"]/div/table[2]'
+
+##
+library(htmltab)
+demoData=htmltab(doc = wikiLink,which = wikiPath)
+```
+
+## 1. Have simple column names:
+
+You have the data, but you need to check the variable names first:
+```{r, eval=FALSE}
+names(demoData)
+```
+
+Let's give easier names to ease further work:
+
+```{r, eval=FALSE}
+NewNames=c("Rank","Country","Score","Electoral","Functioning","Participation","Culture","Liberties","Regimetype","Continent")
+names(demoData)=NewNames
+```
+
+
+## 2. Verify you have the correct data types:
+
+Now, verify the data types:
+
+```{r, eval=FALSE}
+str(demoData)
+```
+
+The most urgent change is to convert the numbers, which are now as **ch**aracter type, into numeric type:
+
+```{r, eval=FALSE}
+#this is wrong: as.numeric(demoData[,c(1,3:8)])
+#
+#this is good:
+demoData[,c(1,3:8)]=lapply(demoData[,c(1,3:8)],as.numeric)
+```
+
+The next change will be on the regime type:
+```{r, eval=FALSE}
+table(demoData$Regimetype)
+```
+
+The are not only in character or text type, but the order is merely alphabetical. Let's turn this column into ordinal type ("ordered factor"" in R):
+
+```{r, eval=FALSE}
+goodLevels=c("Authoritarian","Flawed democracy","Hybrid regime","Full democracy")
+demoData$Regimetype=ordered(demoData$Regimetype,levels=goodLevels)
+```
+
+You can verify the current data types:
+```{r, eval=FALSE}
+str(demoData)
+```
+
+The column _Country_ should remain as text; the column _Continent_ can be transformed into a nominal type ("factor" in R). Let's plan our composite index:
+
+## 3. Create the indexes to plot
+
+### <font color="red">Using Arithmetics</font>
+
+As a matter of fact, the composite index is already computed in the data, it is the **Score**, an average (the arithmetic mean) of the other components.
+
+* __Averaging__: Let's compute the median instead of the mean:
+
+```{r, eval=FALSE}
+# This is wrong: median(demoData[,c(4:8)])
+
+demoData$indexMD=apply(demoData[,c(4:8)],
+                       MARGIN = 1, # by row / 2 by column
+                       median)
+```
+
+
+* __Gap__: Let me create another index based on the median to find gaps relative to median:
+
+```{r, eval=FALSE}
+threshold=median(demoData$indexMD,na.rm = T)
+#
+# expect positive and negative values:
+demoData$indexGAP=demoData$indexMD-threshold
+```
+
+* __Flag__:Another option can be a **flag** index:
+```{r, eval=FALSE}
+# a discrete value: True or False
+demoData$indexFLAG=demoData$indexMD>=threshold
+```
+
+We can also work with the other raw indexes, we can create a *flag* index between two variables:
+```{r, eval=FALSE}
+# a discrete value: True or False
+demoData$LibBetterPart=demoData$Liberties>demoData$Participation
+```
+
+If we had variables from different period, we can also produce a *difference* or a *ratio*. But, let's see what we have now:
+
+```{r, eval=FALSE}
+summary(demoData[,c("Score","indexMD","indexGAP","indexFLAG","LibBetterPart")])
+```
+
+### <font color="red">Creating clusters</font>
+
+
+The column _regime type_ is proposing that the countries can be organized into groups. That organization was done following an arithmetics approach, as the methodology indicates. However, we can request cluster using an unsupervised machine learning approach.
+
+For sake of simplicity, let me request four clusters using the **pam()** function:
+
+```{r, eval=FALSE}
+library(cluster)
+
+set.seed(2019) # very important
+
+# computing distance among points
+distanceMatrix = daisy(demoData[,c(4:8)])
+
+# computing FOUR clusters with: 
+result<- pam(distanceMatrix, k = 4)
+```
+
+With clusters, we have a measure (_silhouette_) of how well an element belongs to a particular cluster:
+```{r, eval=FALSE}
+silResult=silhouette(result$cluster, distanceMatrix)
+```
+
+The object _silResult_ has two important values I will save in my initial data frame:
+```{r, eval=FALSE}
+demoData$cluster=silResult[,"cluster"]
+demoData$quality=silResult[,"sil_width"]
+```
+
+Now I have more information that can be used for plotting:
+```{r, eval=FALSE}
+table(demoData$cluster)
+```
+
+I also have something that the arithmetic approach does not provide, the countries that were difficult to classify:
+```{r, eval=FALSE}
+demoData[demoData$quality<0,'Country']
+```
+
+
+
+### <font color="red">Using factor analysis</font>
+
+You would like turn the 5 dimensions into one, without following an arithmetic approach, but an algebraic one, instead. Dimension reduction is the job of latent variable analysis, and that's the way proposed here.
+
+Let me first create some fake columns that represent values I do not have:
+```{r, eval=FALSE}
+library(matlab)
+top=10*as.vector(ones(1,5))
+bottom=as.vector(zeros(1,5))
+# those become two rows of a data frame
+limitCases=as.data.frame(rbind(bottom,top))
+limitCases
+```
+
+I have create a two-row data frame only because the original daa do not have those values.
+
+Let me subset our original data frame:
+```{r, eval=FALSE}
+subDemo=demoData[,c(4:8)]
+```
+
+Now Let me append the small one to this last one.
+
+```{r, eval=FALSE}
+# FIRST, we need both DFs share same column names
+names(limitCases)=names(subDemo)
+# appending:
+subDemo=rbind(subDemo,limitCases)
+```
+
+Our *subDemo* DF has the data to compute the one index we need. I will show you two ways:
+
+1. **When all are considered numerical**:
+
+This technique is called **confirmatory factor analysis**:
+
+```{r, eval=FALSE}
+library(lavaan)
+
+modelNUM='
+demox=~Electoral + Functioning + Participation + Culture + Liberties
+'
+
+fitNUM<-cfa(modelNUM, data = subDemo)
+indexCFA=lavPredict(fitNUM)
+```
+
+The index computed is not in a range from 1 to 10, we change it so:
+
+```{r, eval=FALSE}
+library(BBmisc)
+indexCFANorm=normalize(indexCFA, 
+                       method = "range", 
+                       margin=2, # by column
+                       range = c(0, 10))
+```
+
+The last rows need to be eliminated:
+```{r, eval=FALSE}
+tail(indexCFANorm)
+```
+
+So, this is our index:
+```{r, eval=FALSE}
+demoData$indexCFA=head(indexCFANorm,-2)
+```
+
+Let me compare the new index with the original score:
+```{r, eval=FALSE}
+plot(demoData$Score,demoData$indexCFA)
+```
+
+2. **When all are considered ordinal**:
+
+In this case we will use PIRT:Polytomous Item Response Theory.
+```{r, eval=FALSE}
+library(mirt)
+
+tempDemo2=floor(demoData[,c(4:8)]) # keeping the integer
+tempDemo2=rbind(tempDemo2,limitCases)
+
+modelORD ='
+democracy = Electoral, Functioning, Participation, Culture,Liberties
+' 
+fitORD <- mirt(data=tempDemo2, 
+               model=modelORD, 
+               itemtype="graded",verbose=F)
+indexPIRT <- fscores(fitORD,response.pattern = tempDemo2)[,'F1']
+```
+
+Again, we make the changes to our index:
+```{r, eval=FALSE}
+# rescale
+indexPIRTNorm=normalize(indexPIRT, method = "range", margin=2,range = c(0, 10))
+#
+# keep values needed
+demoData$indexPIRT=head(indexPIRTNorm,-2)
+```
+
+Let me compare the new index with the original score:
+
+```{r, eval=FALSE}
+plot(demoData$indexPIRT,demoData$indexCFA)
+```
+
+You can see them all here:
+
+```{r, eval=FALSE}
+plot(demoData[,c("Score","indexPIRT","indexCFA")])
+```
+

@@ -1,0 +1,120 @@
+---
+title: "Dashboards at EVANS UW"
+author: "Great student"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    social: menu
+    source_code: embed
+---
+
+```{r setup, include=FALSE}
+library(ggplot2)
+library(plotly)
+library(plyr)
+library(flexdashboard)
+library(sf)
+
+myWeb="https://github.com/Visual-Analytics-Project-UW-EvansSchool/ourMap/raw/main/"
+mapWorldVars=read_sf(paste0(myWeb,"mapWorldVars.geojson"))
+```
+
+Static Plots
+=======================================================================
+
+Row
+-----------------------------------------------------------------------
+
+### Histogram
+
+```{r}
+base = ggplot(data=mapWorldVars) + theme_classic()
+ps1=base + geom_histogram(aes(x=HDI)) 
+ps1
+```
+
+
+### boxplot 
+
+```{r}
+ps2=base + geom_boxplot(aes(y= mil_expend)) 
+ps2
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Scatter Plot 1
+
+```{r}
+ps3=base + geom_point(aes(x=HDI,y= mil_expend)) 
+ps3
+```
+
+### Scatter Plot 2
+
+```{r}
+ps4=base + geom_point(aes(x=HDI,y= DemoIndex)) 
+ps4
+```
+
+Interactive Plots
+=======================================================================
+
+Row
+-----------------------------------------------------------------------
+
+### Histogram 
+
+```{r}
+pi1=base + geom_histogram(aes(x=HDI)) 
+ggplotly(pi1)
+```
+
+### Boxplot
+
+```{r}
+pi2=base + geom_boxplot(aes(y=DemoIndex)) 
+ggplotly(pi2)
+
+```
+
+Row 
+-----------------------------------------------------------------------
+
+### Scatter Plot 1
+
+```{r}
+pi3=base + geom_point(aes(x=HDI,y= mil_expend)) 
+ggplotly(pi3)
+```
+
+### Map
+
+```{r, eval=TRUE,warning=FALSE,message=FALSE}
+library(RColorBrewer)
+library(leaflet)
+
+numberOfClasses = 5
+colorForScale='YlGnBu' # color scale
+bins = quantile(mapWorldVars$DemoIndex, 
+                probs = seq(0, 1, 1/numberOfClasses),
+                na.rm = T) %>% unname()
+palFun <- colorBin(colorForScale, 
+                domain = mapWorldVars$DemoIndex,
+                bins = bins)
+
+#baseLayer
+baseLayer=leaflet(mapWorldVars)%>%
+             addProviderTiles("CartoDB.Positron")
+
+demoPlot=baseLayer %>% 
+          addPolygons(fillColor = ~palFun(DemoIndex),
+                      weight = 0, #border thickness
+                      color = "white",#border color
+                      fillOpacity = 0.7) %>% 
+            addLegend(pal = palFun,
+                      position = 'bottomright',
+                      values = ~DemoIndex)
+demoPlot
+```
